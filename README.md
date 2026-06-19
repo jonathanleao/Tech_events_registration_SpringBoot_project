@@ -568,7 +568,7 @@ Todos os endpoints estão disponíveis para teste. Aqui está um passo-a-passo:
 
 #### 1. Criar um Evento
 ```
-POST http://localhost:8080/api/Events
+POST http://localhost:8080/Events
 Content-Type: application/json
 
 {
@@ -583,7 +583,7 @@ Content-Type: application/json
 
 #### 2. Criar um Participante
 ```
-POST http://localhost:8080/api/Participants
+POST http://localhost:8080/Participants
 Content-Type: application/json
 
 {
@@ -596,7 +596,7 @@ Content-Type: application/json
 
 #### 3. Criar uma Inscrição
 ```
-POST http://localhost:8080/api/Enrollments
+POST http://localhost:8080/Enrollments
 Content-Type: application/json
 
 {
