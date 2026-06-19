@@ -9,6 +9,8 @@ import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.Mappers.EnrollmentMapper;
 import com.jonas.TechEventsRegistration.Repository.EnrollmentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,11 @@ public class EnrollmentServices {
     private final EnrollmentMapper enrollmentMapper;
     private final ParticipantServices participantServices;
     private final EventServices eventServices;
+
+
+    public Page<Enrollment> findAll(Pageable pageable){
+        return enrollmentRepository.findAll(pageable);
+    }
 
     public Enrollment findById(Long id){
         return enrollmentRepository.findById(id)
@@ -45,7 +52,6 @@ public class EnrollmentServices {
         return enrollmentRepository.save(enrollment);
 
     }
-
     public void delete(Long id){
         findById(id);
         enrollmentRepository.deleteById(id);
