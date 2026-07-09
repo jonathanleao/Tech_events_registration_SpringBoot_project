@@ -32,4 +32,15 @@ public class ExceptionsHandler {
                         .timestamp(LocalDateTime.now())
                         .build(), HttpStatus.BAD_REQUEST);
     }
+    
+    @ExceptionHandler(Exception.class)
+    ResponseEntity<ExceptionDetails> handlerGenericException(Exception e){
+        return new ResponseEntity<>(
+                ExceptionDetails.builder()
+                        .title("Internal Server Error")
+                        .message("An unexpected error occurred")
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                        .timestamp(LocalDateTime.now())
+                        .build(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }
