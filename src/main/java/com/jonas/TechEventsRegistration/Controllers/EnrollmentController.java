@@ -4,6 +4,7 @@ import com.jonas.TechEventsRegistration.DTO.EnrollmentRequests.EnrollmentPostReq
 import com.jonas.TechEventsRegistration.DTO.EnrollmentRequests.EnrollmentPutRequest;
 import com.jonas.TechEventsRegistration.Entity.Enrollment;
 import com.jonas.TechEventsRegistration.Services.EnrollmentServices;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,9 +20,9 @@ public class EnrollmentController {
 
     private final EnrollmentServices enrollmentServices;
 
-    @GetMapping
+    @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<Enrollment>> findAll(Pageable pageable){
+    public ResponseEntity<Page<Enrollment>> findAll(@Parameter (hidden = true) Pageable pageable){
         return new ResponseEntity<>(enrollmentServices.findAll(pageable), HttpStatus.OK);
     }
 
@@ -30,17 +31,20 @@ public class EnrollmentController {
         return  new ResponseEntity<>(enrollmentServices.findById(id), HttpStatus.OK);
     }
 
-    @PostMapping
+    @PostMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Enrollment> save (@RequestBody EnrollmentPostRequest enrollmentPostRequest){
         return  new ResponseEntity<>(enrollmentServices.save(enrollmentPostRequest), HttpStatus.CREATED);
     }
 
-    @PutMapping
+    @PutMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Enrollment> update(@RequestBody EnrollmentPutRequest enrollmentPutRequest){
         return new ResponseEntity<>(enrollmentServices.update(enrollmentPutRequest),HttpStatus.OK);
     }
 
-    @DeleteMapping(path = "/{id}")
+    @DeleteMapping(path = "/admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id){
         enrollmentServices.delete(id);
         return  new ResponseEntity<>(HttpStatus.NO_CONTENT);

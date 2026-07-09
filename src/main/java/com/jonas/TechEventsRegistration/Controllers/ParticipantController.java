@@ -4,6 +4,7 @@ import com.jonas.TechEventsRegistration.DTO.ParticipantRequest.ParticipantPostRe
 import com.jonas.TechEventsRegistration.DTO.ParticipantRequest.ParticipantPutRequest;
 import com.jonas.TechEventsRegistration.Entity.Participant;
 import com.jonas.TechEventsRegistration.Services.ParticipantServices;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,9 +22,10 @@ public class ParticipantController {
 
     private final ParticipantServices participantServices;
 
-    @GetMapping
+
+    @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<Participant>> findAll(Pageable pageable) {
+    public ResponseEntity<Page<Participant>> findAll(@Parameter(hidden = true) Pageable pageable) {
         return new ResponseEntity<>(participantServices.findAll(pageable), HttpStatus.OK);
     }
 
@@ -37,17 +39,20 @@ public class ParticipantController {
         return new ResponseEntity<>(participantServices.findByName(name), HttpStatus.OK);
     }
 
-    @PostMapping
+    @PostMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Participant> save(@RequestBody ParticipantPostRequest participantPostRequest) {
         return new ResponseEntity<>(participantServices.save(participantPostRequest), HttpStatus.CREATED);
     }
 
-    @PutMapping
+    @PutMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Participant> update(@RequestBody ParticipantPutRequest participantPutRequest) {
         return new ResponseEntity<>(participantServices.update(participantPutRequest), HttpStatus.OK);
     }
 
-    @DeleteMapping(path = "/{id}")
+    @DeleteMapping(path = "/admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         participantServices.delete(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);

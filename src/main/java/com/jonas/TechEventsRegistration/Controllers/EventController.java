@@ -4,6 +4,7 @@ import com.jonas.TechEventsRegistration.DTO.EventRequests.EventPostRequest;
 import com.jonas.TechEventsRegistration.DTO.EventRequests.EventPutRequest;
 import com.jonas.TechEventsRegistration.Entity.Event;
 import com.jonas.TechEventsRegistration.Services.EventServices;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,9 +22,9 @@ public class EventController {
 
     private final EventServices eventServices;
 
-    @GetMapping
+    @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<Event>> findAll(Pageable pageable) {
+    public ResponseEntity<Page<Event>> findAll(@Parameter(hidden = true) Pageable pageable) {
         return new ResponseEntity<>(eventServices.findAll(pageable), HttpStatus.OK);
     }
 
@@ -37,17 +38,20 @@ public class EventController {
         return new ResponseEntity<>(eventServices.findByName(name), HttpStatus.OK);
     }
 
-    @PostMapping
+    @PostMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Event> save(@RequestBody EventPostRequest eventPostRequest) {
         return new ResponseEntity<>(eventServices.save(eventPostRequest), HttpStatus.CREATED);
     }
 
-    @PutMapping
+    @PutMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Event> update(@RequestBody EventPutRequest eventPutRequest) {
         return new ResponseEntity<>(eventServices.update(eventPutRequest), HttpStatus.OK);
     }
 
-    @DeleteMapping(path = "/{id}")
+    @DeleteMapping(path = "/admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         eventServices.delete(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
