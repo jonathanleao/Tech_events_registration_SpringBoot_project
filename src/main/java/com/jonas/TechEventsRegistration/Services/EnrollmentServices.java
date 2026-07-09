@@ -39,6 +39,7 @@ public class EnrollmentServices {
         Enrollment enrollment = enrollmentMapper.enrollmentToPost(enrollmentPostRequest);
         enrollment.setEvent(event);
         enrollment.setParticipant(participant);
+        decreaseVacancies(event);
         return enrollmentRepository.save(enrollment);
     }
     @Transactional
@@ -53,7 +54,20 @@ public class EnrollmentServices {
 
     }
     public void delete(Long id){
-        findById(id);
+        Enrollment enrollment = findById(id);
+        increaseVacancies(enrollment);
         enrollmentRepository.deleteById(id);
+    }
+
+    private void decreaseVacancies(Event event){
+        if (event.getVacancies() <= 0){
+            throw  new IllegalStateException("No vacancies dispo for this event");
+        }
+        event.setVacancies(event.getVacancies() - 1);
+    }
+    private void increaseVacancies(Enrollment enrollment){
+        enrollment.getEvent().setVacancies(
+                enrollment.getEvent().getVacancies() + 1
+        );
     }
 }
