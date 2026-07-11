@@ -47,12 +47,19 @@ public class EnrollmentServices {
         Event event = eventServices.findById(enrollmentPutRequest.getEventId());
         Participant participant = participantServices.findById(enrollmentPutRequest.getParticipantId());
         Enrollment enrollment = findById(enrollmentPutRequest.getId());
+
+        if (!enrollment.getEvent().getId().equals(event.getId())){
+            increaseVacancies(enrollment);
+            decreaseVacancies(event);
+        }
+
         enrollmentMapper.enrollmentToPut(enrollmentPutRequest, enrollment);
         enrollment.setParticipant(participant);
         enrollment.setEvent(event);
         return enrollmentRepository.save(enrollment);
 
     }
+    @Transactional
     public void delete(Long id){
         Enrollment enrollment = findById(id);
         increaseVacancies(enrollment);
