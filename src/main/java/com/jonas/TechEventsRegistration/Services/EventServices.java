@@ -44,6 +44,7 @@ public class EventServices {
         eventMapper.eventToPut(eventPutRequest,event);
         return eventRepository.save(event);
     }
+    @Transactional
     public void delete(Long id){
         findById(id);
         eventRepository.deleteById(id);

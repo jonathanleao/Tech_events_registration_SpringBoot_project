@@ -46,6 +46,7 @@ public class ParticipantServices {
         return participantRepository.save(participant);
     }
 
+    @Transactional
     public void delete(Long id) {
         findById(id);
         participantRepository.deleteById(id);
