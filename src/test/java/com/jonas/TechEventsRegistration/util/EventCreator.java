@@ -14,18 +14,19 @@ public class EventCreator {
                 .description("Evento para aprendizado e Programção Orientada a Objetos para estudantes" +
                         " de áreas da tecnologia usando a linguagem em java")
                 .eventDateAndHours(LocalDateTime.of(2026, 1, 23, 10, 0))
-                .vacancies(50).build();
+                .vacancies(50)
+                .maxVacancies(50).build();
     }
     public static Event createEventValid(){
         return Event.builder()
                 .id(1L)
-                .eventName("Programação Orientada a Objeto em Java")
-                .local("Rua Rio Madeira, Iranduba-AM")
-                .category("Tecnologia e Programação")
-                .description("Evento para aprendizado e Programção Orientada a Objetos para estudantes" +
-                        " de áreas da tecnologia usando a linguagem Java")
-                .eventDateAndHours(LocalDateTime.of(2026, 1, 23, 10, 0))
-                .vacancies(50).build();
+                .eventName(createEvent().getEventName())
+                .local(createEvent().getLocal())
+                .category(createEvent().getCategory())
+                .description(createEvent().getDescription())
+                .eventDateAndHours(createEvent().getEventDateAndHours())
+                .vacancies(50)
+                .maxVacancies(50).build();
     }
     public static Event createEventUpdated(){
         return Event.builder()
@@ -36,6 +37,7 @@ public class EventCreator {
                 .description("Evento para aprendizado e Programção Orientada a Objetos para estudantes" +
                         " de áreas da tecnologia usando a Linguagem python")
                 .eventDateAndHours(LocalDateTime.of(2026, 1, 23, 10, 0))
-                .vacancies(50).build();
+                .vacancies(50)
+                .maxVacancies(70).build();
     }
 }

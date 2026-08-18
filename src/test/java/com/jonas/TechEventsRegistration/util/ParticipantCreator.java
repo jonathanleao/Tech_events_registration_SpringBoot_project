@@ -15,18 +15,18 @@ public class ParticipantCreator {
     public static Participant createParticipantValid() {
         return Participant.builder()
                 .id(1L)
-                .participantName("Jonathan")
-                .institution("Uninorte Djalma Batista")
-                .email("Jonathan.Leao@Hotmail.com")
-                .phoneNumber("(92)9999-9999").build();
+                .participantName(createParticipant().getParticipantName())
+                .institution(createParticipant().getInstitution())
+                .email(createParticipant().getEmail())
+                .phoneNumber(createParticipant().getPhoneNumber()).build();
     }
 
     public static Participant createParticipantUpdated() {
         return Participant.builder()
                 .id(createParticipantValid().getId())
-                .participantName("Jonathan")
+                .participantName("Jonathan update")
                 .institution("UFAM-Universidade Federal Do Amazonas")
-                .email("Jonathan.Leao@Hotmail.com")
+                .email("Jonathan.Leao.update@Hotmail.com")
                 .phoneNumber("(92)9999-9999").build();
     }
 }
