@@ -13,12 +13,12 @@ import lombok.*;
 public class ParticipantRequest {
 
     @NotBlank
-    private String ParticipantName;
+    private String participantName;
     @NotBlank
     @Email
     private String email;
     @NotBlank
     private String phoneNumber;
     @NotBlank
-    private String Institution;
+    private String institution;
 }

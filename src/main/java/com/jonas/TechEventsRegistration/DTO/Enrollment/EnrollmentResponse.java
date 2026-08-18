@@ -10,7 +10,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EnrollmentResponse {
-    private Long Id;
+    private Long id;
     private ParticipantResponse participant;
     private EventResponse event;
 }
