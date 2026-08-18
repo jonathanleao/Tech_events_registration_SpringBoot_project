@@ -1,6 +1,7 @@
 package com.jonas.TechEventsRegistration.DTO.Event;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -23,6 +24,7 @@ public class EventRequest {
     @NotBlank
     private String category;
     @NotNull
+    @Min(1)
     private Integer vacancies;
     @NotNull
     private Integer maxVacancies;
