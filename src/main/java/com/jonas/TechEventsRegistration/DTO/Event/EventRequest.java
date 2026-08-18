@@ -24,6 +24,8 @@ public class EventRequest {
     private String category;
     @NotNull
     private Integer vacancies;
+    @NotNull
+    private Integer maxVacancies;
 
     @NotNull
     @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
