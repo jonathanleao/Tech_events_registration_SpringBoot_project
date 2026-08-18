@@ -9,7 +9,7 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class EnrolmentResponse {
+public class EnrollmentResponse {
     private Long Id;
     private ParticipantResponse participant;
     private EventResponse event;

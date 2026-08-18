@@ -14,9 +14,9 @@ import java.time.LocalDate;
 public class EnrollmentRequest {
 
     @NotNull
-    private Integer participantId;
+    private Long participantId;
     @NotNull
-    private Integer eventId;
+    private Long eventId;
 
     @JsonFormat(pattern = "dd/MM" + "/yyyy")
     private LocalDate enrollmentDate;
