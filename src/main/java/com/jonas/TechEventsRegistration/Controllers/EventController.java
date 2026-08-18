@@ -1,10 +1,10 @@
 package com.jonas.TechEventsRegistration.Controllers;
 
-import com.jonas.TechEventsRegistration.DTO.EventRequests.EventPostRequest;
-import com.jonas.TechEventsRegistration.DTO.EventRequests.EventPutRequest;
-import com.jonas.TechEventsRegistration.Entity.Event;
+import com.jonas.TechEventsRegistration.DTO.Event.EventRequest;
+import com.jonas.TechEventsRegistration.DTO.Event.EventResponse;
 import com.jonas.TechEventsRegistration.Services.EventServices;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,30 +24,30 @@ public class EventController {
 
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<Event>> findAll(@Parameter(hidden = true) Pageable pageable) {
+    public ResponseEntity<Page<EventResponse>> findAll(@Parameter(hidden = true) Pageable pageable) {
         return new ResponseEntity<>(eventServices.findAll(pageable), HttpStatus.OK);
     }
 
     @GetMapping(path = "/{id}")
-    public ResponseEntity<Event> findById(@PathVariable Long id) {
+    public ResponseEntity<EventResponse> findById(@PathVariable Long id) {
         return new ResponseEntity<>(eventServices.findById(id), HttpStatus.OK);
     }
 
     @GetMapping(path = "/find")
-    public ResponseEntity<List<Event>> findByName(@RequestParam String name) {
+    public ResponseEntity<List<EventResponse>> findByName(@RequestParam String name) {
         return new ResponseEntity<>(eventServices.findByName(name), HttpStatus.OK);
     }
 
     @PostMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Event> save(@RequestBody EventPostRequest eventPostRequest) {
-        return new ResponseEntity<>(eventServices.save(eventPostRequest), HttpStatus.CREATED);
+    public ResponseEntity<EventResponse> save(@RequestBody EventRequest eventRequest) {
+        return new ResponseEntity<>(eventServices.save(eventRequest), HttpStatus.CREATED);
     }
 
-    @PutMapping("/admin")
+    @PutMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Event> update(@RequestBody EventPutRequest eventPutRequest) {
-        return new ResponseEntity<>(eventServices.update(eventPutRequest), HttpStatus.OK);
+    public ResponseEntity<EventResponse> update(@PathVariable Long id, @Valid @RequestBody EventRequest eventRequest) {
+        return new ResponseEntity<>(eventServices.update(id, eventRequest), HttpStatus.OK);
     }
 
     @DeleteMapping(path = "/admin/{id}")
