@@ -47,8 +47,8 @@ public class EnrollmentServices {
         entity.setEvent(event);
         entity.setParticipant(participant);
         decreaseVacancies(event);
-        enrollmentRepository.save(entity);
-        return enrollmentMapper.toResponse(entity);
+        Enrollment entitySaved = enrollmentRepository.save(entity);
+        return enrollmentMapper.toResponse(entitySaved);
     }
     @Transactional
     public EnrollmentResponse update(Long id, EnrollmentRequest enrollmentRequest){
@@ -63,8 +63,8 @@ public class EnrollmentServices {
 
         enrollment.setEvent(event);
         enrollment.setParticipant(participant);
-        enrollmentRepository.save(enrollment);
-        return enrollmentMapper.toResponse(enrollment);
+        Enrollment entitySaved = enrollmentRepository.save(enrollment);
+        return enrollmentMapper.toResponse(entitySaved);
 
     }
     @Transactional

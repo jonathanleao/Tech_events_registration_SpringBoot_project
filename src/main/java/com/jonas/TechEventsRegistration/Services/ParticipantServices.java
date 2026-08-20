@@ -42,8 +42,8 @@ public class ParticipantServices {
     @Transactional
     public ParticipantResponse save(ParticipantRequest participantRequest) {
         Participant entity = participantMapper.toEntity(participantRequest);
-        participantRepository.save(entity);
-        return participantMapper.toResponse(entity);
+        Participant entitySaved = participantRepository.save(entity);
+        return participantMapper.toResponse(entitySaved);
     }
 
     @Transactional
@@ -51,13 +51,13 @@ public class ParticipantServices {
        findById(id);
         Participant entity = participantMapper.toEntity(participantRequest);
         entity.setId(id);
-        participantRepository.save(entity);
-        return participantMapper.toResponse(entity);
+        Participant entitySaved = participantRepository.save(entity);
+        return participantMapper.toResponse(entitySaved);
     }
 
     @Transactional
     public void delete(Long id) {
-        findById(id);
+        findParticipantEntityById(id);
         participantRepository.deleteById(id);
     }
 }

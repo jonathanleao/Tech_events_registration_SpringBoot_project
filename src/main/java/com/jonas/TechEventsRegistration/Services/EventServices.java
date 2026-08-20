@@ -43,13 +43,14 @@ public class EventServices {
     public EventResponse save(EventRequest eventRequest) {
         validateVacanciesMaxCapacity(eventRequest.getVacancies(), eventRequest.getMaxVacancies());
         Event entity = eventMapper.toEntity(eventRequest);
-        eventRepository.save(entity);
-        return eventMapper.toResponse(entity);
+        Event entitySaved = eventRepository.save(entity);
+        return eventMapper.toResponse(entitySaved);
     }
 
     @Transactional
     public EventResponse update(Long id, EventRequest eventRequest) {
         findById(id);
+        validateVacanciesMaxCapacity(eventRequest.getVacancies(), eventRequest.getMaxVacancies());
         Event entity = eventMapper.toEntity(eventRequest);
         entity.setId(id);
         eventRepository.save(entity);
@@ -58,7 +59,7 @@ public class EventServices {
 
     @Transactional
     public void delete(Long id) {
-        findById(id);
+        findEventEntityById(id);
         eventRepository.deleteById(id);
     }
     private void validateVacanciesMaxCapacity(Integer vacancies, Integer maxVacancies){
