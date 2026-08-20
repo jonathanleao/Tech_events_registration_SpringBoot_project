@@ -110,7 +110,7 @@ class EventServicesTest {
 
         BDDMockito.when(eventMapper.toEntity(request)).thenReturn(entity);
         BDDMockito.when(eventRepository.save(entity)).thenReturn(savedEntity);
-        BDDMockito.when(eventMapper.toResponse(entity)).thenReturn(response);
+        BDDMockito.when(eventMapper.toResponse(savedEntity)).thenReturn(response);
 
         EventResponse result = eventServices.save(request);
 
@@ -131,7 +131,7 @@ class EventServicesTest {
     }
 
     @Test
-    @DisplayName("update should persist the changes for an existing event")
+    @DisplayName("update should save event updated and return a response")
     void updateShouldPersistExistingEventChanges() {
         EventRequest request = EventRequestCreator.createEventRequestUpdated();
         Event existingEvent = EventCreator.createEventValid();
@@ -140,7 +140,6 @@ class EventServicesTest {
         EventResponse updatedResponse = EventResponseCreator.createEventResponseUpdated();
 
         BDDMockito.when(eventRepository.findById(existingEvent.getId())).thenReturn(Optional.of(existingEvent));
-        BDDMockito.when(eventMapper.toResponse(existingEvent)).thenReturn(mock(EventResponse.class));
         BDDMockito.when(eventMapper.toEntity(request)).thenReturn(updatedEntity);
         BDDMockito.when(eventRepository.save(updatedEntity)).thenReturn(updateEventValid);
         BDDMockito.when(eventMapper.toResponse(updatedEntity)).thenReturn(updatedResponse);
@@ -160,7 +159,6 @@ class EventServicesTest {
         request.setMaxVacancies(50);
 
         BDDMockito.when(eventRepository.findById(eventValid.getId())).thenReturn(Optional.of(eventValid));
-        BDDMockito.when(eventMapper.toResponse(eventValid)).thenReturn(mock(EventResponse.class));
 
         assertThatThrownBy(()-> eventServices.update(eventValid.getId(), request))
                 .isInstanceOf(VacanciesLimitExceedException.class);
