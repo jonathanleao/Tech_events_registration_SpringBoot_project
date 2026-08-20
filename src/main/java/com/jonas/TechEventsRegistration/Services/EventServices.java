@@ -49,7 +49,7 @@ public class EventServices {
 
     @Transactional
     public EventResponse update(Long id, EventRequest eventRequest) {
-        findById(id);
+        findEventEntityById(id);
         validateVacanciesMaxCapacity(eventRequest.getVacancies(), eventRequest.getMaxVacancies());
         Event entity = eventMapper.toEntity(eventRequest);
         entity.setId(id);

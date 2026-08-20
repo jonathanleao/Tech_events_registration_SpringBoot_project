@@ -48,7 +48,7 @@ public class ParticipantServices {
 
     @Transactional
     public ParticipantResponse update(Long id,ParticipantRequest participantRequest ) {
-       findById(id);
+       findParticipantEntityById(id);
         Participant entity = participantMapper.toEntity(participantRequest);
         entity.setId(id);
         Participant entitySaved = participantRepository.save(entity);
