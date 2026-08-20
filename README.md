@@ -511,15 +511,15 @@ TechEventsRegistration/
 - [x] Validação de email em Participant
 - [x] Queries customizadas (find by name)
 - [x] Testes de endpoints no Postman
+- [x]Documentação Swagger/OpenAPI
+- [x] Testes unitários (JUnit 5 + Mockito)
 
 ### 🟡 Em Desenvolvimento
 
 - [ ] Adicionar validações robustas (NotNull, NotBlank, Size, Pattern)
 - [ ] Implementar logging profissional (SLF4J)
-- [ ] Testes unitários (JUnit 5 + Mockito)
 - [ ] Testes de integração
 - [ ] API Versioning (v1, v2)
-- [ ] Documentação Swagger/OpenAPI
 - [ ] Spring Security (Autenticação + Autorização)
 - [ ] Cache (Redis)
 
@@ -540,11 +540,8 @@ TechEventsRegistration/
 ### Priority 1 - Crítico
 1. **Validação Robusta** - Adicionar @NotNull, @NotBlank, @Size em todos os DTOs
 2. **Logging Profissional** - Implementar SLF4J com Logback
-3. **Testes Unitários** - Coverage mínimo de 80% com JUnit 5
 
 ### Priority 2 - Importante
-4. **Spring Security** - Authentication e Authorization
-5. **Swagger/OpenAPI** - Documentação automática de API
 6. **Query Optimization** - Índices no banco e lazy loading
 
 ### Priority 3 - Polimento
