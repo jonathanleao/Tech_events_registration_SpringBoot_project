@@ -124,7 +124,7 @@ class ParticipantServicesTest {
 
     @Test
     @DisplayName("update should save the participant updated and return a response")
-    void updateShouldValidateAndPersistParticipantChanges() {
+    void updateShouldValidateAndPersistParticipantAndReturnResponse() {
         ParticipantRequest request = ParticipantRequestCreator.createParticipantRequestUpdated();
         Participant existingParticipant = ParticipantCreator.createParticipantValid();
         Participant updatedParticipant = ParticipantCreator.createParticipantUpdated();

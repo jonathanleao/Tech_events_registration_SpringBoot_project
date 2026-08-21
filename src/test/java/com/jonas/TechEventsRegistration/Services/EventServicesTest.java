@@ -85,7 +85,7 @@ class EventServicesTest {
     }
 
     @Test
-    @DisplayName("findByName should return all matching event responses")
+    @DisplayName("findByName should return a List event responses")
     void findByNameShouldReturnListOfResponses() {
         Event event = EventCreator.createEventValid();
         EventResponse response = EventResponseCreator.createEventResponse();
@@ -132,7 +132,7 @@ class EventServicesTest {
 
     @Test
     @DisplayName("update should save event updated and return a response")
-    void updateShouldPersistExistingEventChanges() {
+    void updateShouldSaveEventUpdatedAndReturnAResponse() {
         EventRequest request = EventRequestCreator.createEventRequestUpdated();
         Event existingEvent = EventCreator.createEventValid();
         Event updatedEntity = EventCreator.createEventUpdated();
@@ -151,7 +151,7 @@ class EventServicesTest {
     }
 
     @Test
-    @DisplayName("update should reject values where vacancies exceed maxVacancies")
+    @DisplayName("update should throw VacanciesLimitExceedExceptions values where vacancies exceed maxVacancies")
     void updateShouldThrowVacanciesLimitExceedExceptionWhenVacanciesExceedLimit() {
         EventRequest request = EventRequestCreator.createEventRequest();
         Event eventValid = EventCreator.createEventValid();

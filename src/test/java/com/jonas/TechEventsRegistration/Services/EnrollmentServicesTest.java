@@ -89,7 +89,7 @@ class EnrollmentServicesTest {
     @Test
     @DisplayName("save should create enrollment, associate event and participant, and reduce vacancies, and return" +
             "a Enrollment response")
-    void saveShouldCreateEnrollmentAndDecreaseVacancies() {
+    void saveShouldCreateEnrollmentAndDecreaseVacanciesAndReturnEnrollmentResponse() {
         EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
         Event event = EventCreator.createEventValid();
         Participant participant = ParticipantCreator.createParticipantValid();
@@ -125,7 +125,7 @@ class EnrollmentServicesTest {
     }
 
     @Test
-    @DisplayName("save should reject enrollment when there are no available vacancies")
+    @DisplayName("save should throw NoVacanciesAvailable when there are no available vacancies")
     void saveShouldThrowNoVacanciesAvailableExceptionWhenVacanciesAreZero() {
         EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
         Event event = EventCreator.createEventValid();
@@ -146,7 +146,7 @@ class EnrollmentServicesTest {
     @Test
     @DisplayName("update should adjust vacancies when the enrollment changes to another event " +
             ", save the event updated and return a response")
-    void updateShouldAdjustVacanciesWhenEventChanges() {
+    void updateShouldAdjustVacanciesWhenEventChangesAndSave() {
         Enrollment enrollment = EnrollmentCreator.enrollmentCreatorValid();
         Event oldEvent = enrollment.getEvent();
         oldEvent.setId(1L);
