@@ -87,7 +87,7 @@ public class EnrollmentServices {
     }
     private void validateVacanciesMaxCapacity(Integer vacancies, Integer maxVacancies){
         if (vacancies > maxVacancies){
-            throw  new VacanciesLimitExceedException("vacancies cant not Exceed the limit");
+            throw  new VacanciesLimitExceedException("vacancies cant not exceed the limit");
         }
     }
 
