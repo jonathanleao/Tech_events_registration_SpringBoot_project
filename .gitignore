@@ -33,3 +33,5 @@ build/
 .vscode/
 
 src/main/resources/application.yaml
+src/main/resources/application-docker.
+.env
