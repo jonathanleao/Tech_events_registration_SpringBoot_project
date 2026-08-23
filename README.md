@@ -298,7 +298,7 @@ No `SecurityConfig`, existem dois usuários cadastrados:
 Exemplo de autenticação via curl:
 
 ```bash
-curl -u 'Jonathan Leão:JJnic@J0n' http://localhost:8080/Events/admin?page=0\&size=6
+curl -u 'Jonathan Leão:adminSenha' http://localhost:8080/Events/admin?page=0\&size=6
 ```
 
 No Postman, use a aba Authorization e selecione `Basic Auth`.
@@ -359,7 +359,7 @@ Authorization: Basic <base64(username:password)>
 Exemplo com curl:
 
 ```bash
-curl -u 'Jonathan Leão:JJnic@J0n' 'http://localhost:8080/Events/admin?page=0&size=6'
+curl -u 'Jonathan Leão:adminSenha' 'http://localhost:8080/Events/admin?page=0&size=6'
 ```
 
 Resposta esperada:
@@ -430,7 +430,7 @@ Exemplo de payload:
   "category": "Backend",
   "vacancies": 30,
   "maxVacancies": 30,
-  "eventDateAndHours": "20/08/2026 19:00"
+  "eventDateAndHours": "22/08/2026 14:30"
 }
 ```
 
@@ -530,7 +530,7 @@ Payload:
 {
   "participantName": "Maria Souza",
   "email": "maria@email.com",
-  "phoneNumber": "11999999999",
+  "phoneNumber": "(92) 98765-4321",
   "institution": "Universidade Federal do Rio de Janeiro"
 }
 ```
@@ -558,7 +558,7 @@ Payload:
 {
   "participantName": "Maria Souza da Silva",
   "email": "maria.silva@email.com",
-  "phoneNumber": "11888888888",
+  "phoneNumber": "(11) 98888-8888",
   "institution": "Universidade de São Paulo"
 }
 ```
@@ -746,7 +746,7 @@ curl -u 'Jonathan Leão:adminSenha' -X POST http://localhost:8080/Events/admin \
     "category": "Backend",
     "vacancies": 30,
     "maxVacancies": 30,
-    "eventDateAndHours": "20/08/2026 19:00"
+    "eventDateAndHours": "22/08/2026 14:30"
   }'
 ```
 
@@ -758,7 +758,7 @@ curl -u 'Jonathan Leão:adminSenha' -X POST http://localhost:8080/Participants/a
   -d '{
     "participantName": "Maria Souza",
     "email": "maria@email.com",
-    "phoneNumber": "11999999999",
+    "phoneNumber": "(92) 98765-4321",
     "institution": "USP"
   }'
 ```
@@ -778,7 +778,7 @@ curl -u 'Jonathan Leão:adminSenha' -X POST http://localhost:8080/Enrollments/ad
 
 1. inicie a aplicação;
 2. abra `http://localhost:8080/swagger-ui/index.html`;
-3. autentique com o usuário `Jonathan Leão` e senha `JJnic@J0n`;
+3. autentique com o usuário `Jonathan Leão` e senha `adminSenha`;
 4. teste os endpoints diretamente na interface.
 
 ### 3) Teste via Postman
