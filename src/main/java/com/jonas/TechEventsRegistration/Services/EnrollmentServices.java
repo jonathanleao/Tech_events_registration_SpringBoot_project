@@ -5,6 +5,7 @@ import com.jonas.TechEventsRegistration.DTO.Enrollment.EnrollmentResponse;
 import com.jonas.TechEventsRegistration.Entity.Enrollment;
 import com.jonas.TechEventsRegistration.Entity.Event;
 import com.jonas.TechEventsRegistration.Entity.Participant;
+import com.jonas.TechEventsRegistration.Exceptions.EventAlreadyOccurredException;
 import com.jonas.TechEventsRegistration.Exceptions.NoVacanciesAvailableException;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.Exceptions.VacanciesLimitExceedException;
@@ -15,6 +16,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -42,8 +46,12 @@ public class EnrollmentServices {
     @Transactional
     public EnrollmentResponse save (EnrollmentRequest enrollmentRequest){
         Event event = eventServices.findEventEntityById(enrollmentRequest.getEventId());
+
+        validateEventHasNotOccurred(event);
+
         Participant participant = participantServices.findParticipantEntityById(enrollmentRequest.getParticipantId());
         Enrollment entity = enrollmentMapper.toEntity(enrollmentRequest);
+        entity.setEnrollmentDate(LocalDate.now());
         entity.setEvent(event);
         entity.setParticipant(participant);
         decreaseVacancies(event);
@@ -54,11 +62,15 @@ public class EnrollmentServices {
     public EnrollmentResponse update(Long id, EnrollmentRequest enrollmentRequest){
         Enrollment enrollment = findEnrollmentEntityById(id);
         Event event = eventServices.findEventEntityById(enrollmentRequest.getEventId());
+
+        validateEventHasNotOccurred(event);
+
         Participant participant = participantServices.findParticipantEntityById(enrollmentRequest.getParticipantId());
 
         if (!enrollment.getEvent().getId().equals(event.getId())){
             increaseVacancies(enrollment.getEvent());
             decreaseVacancies(event);
+            enrollment.setEnrollmentDate(LocalDate.now());
         }
 
         enrollment.setEvent(event);
@@ -80,15 +92,22 @@ public class EnrollmentServices {
         }
         event.setVacancies(event.getVacancies() - 1);
     }
+
     private void increaseVacancies(Event event){
         Integer newVacancies = event.getVacancies() + 1;
         validateVacanciesMaxCapacity(newVacancies, event.getMaxVacancies());
         event.setVacancies(newVacancies);
     }
+
     private void validateVacanciesMaxCapacity(Integer vacancies, Integer maxVacancies){
         if (vacancies > maxVacancies){
             throw  new VacanciesLimitExceedException("vacancies cant not exceed the limit");
         }
     }
 
+    private void validateEventHasNotOccurred(Event event){
+        if (event.getEventDateAndHours().isBefore(LocalDateTime.now())){
+            throw  new EventAlreadyOccurredException("you can´t not subscribe, the event is already occurred ");
+        }
+    }
 }

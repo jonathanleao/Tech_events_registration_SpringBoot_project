@@ -5,6 +5,7 @@ import com.jonas.TechEventsRegistration.DTO.Enrollment.EnrollmentResponse;
 import com.jonas.TechEventsRegistration.Entity.Enrollment;
 import com.jonas.TechEventsRegistration.Entity.Event;
 import com.jonas.TechEventsRegistration.Entity.Participant;
+import com.jonas.TechEventsRegistration.Exceptions.EventAlreadyOccurredException;
 import com.jonas.TechEventsRegistration.Exceptions.NoVacanciesAvailableException;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.Mappers.EnrollmentMapper;
@@ -26,12 +27,12 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -92,6 +93,7 @@ class EnrollmentServicesTest {
     void saveShouldCreateEnrollmentAndDecreaseVacanciesAndReturnEnrollmentResponse() {
         EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
         Event event = EventCreator.createEventValid();
+
         Participant participant = ParticipantCreator.createParticipantValid();
         Enrollment entity = EnrollmentCreator.enrollmentCreator();
         EnrollmentResponse response = EnrollmentResponseCreator.createEnrollmentResponse();
@@ -113,7 +115,6 @@ class EnrollmentServicesTest {
     void saveShouldThrowNotFoundExceptionWhenParticipantDoesNotExist() {
         EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
         Event event = EventCreator.createEventValid();
-
         BDDMockito.when(eventServices.findEventEntityById(event.getId())).thenReturn(event);
         BDDMockito.when(participantServices.findParticipantEntityById(1L))
                 .thenThrow(NotFoundException.class);
@@ -139,6 +140,40 @@ class EnrollmentServicesTest {
 
         assertThatThrownBy(()-> enrollmentServices.save(request))
                 .isInstanceOf(NoVacanciesAvailableException.class);
+
+        BDDMockito.verify(enrollmentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("save should throw EventAlreadyOccurredException when the event date is in the past")
+    void saveShouldThrowEventAlreadyOccurredExceptionWhenEventHasAlreadyOccurred() {
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
+        Event event = EventCreator.createEventValid();
+        event.setEventDateAndHours(LocalDateTime.now().minusMinutes(5));
+
+        BDDMockito.when(eventServices.findEventEntityById(event.getId())).thenReturn(event);
+
+        assertThatThrownBy(() -> enrollmentServices.save(request))
+                .isInstanceOf(EventAlreadyOccurredException.class);
+
+        BDDMockito.verify(enrollmentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("update should throw EventAlreadyOccurredException when the new event date is in the past")
+    void updateShouldThrowEventAlreadyOccurredExceptionWhenNewEventHasAlreadyOccurred() {
+        Enrollment enrollment = EnrollmentCreator.enrollmentCreatorValid();
+        Event event = EventCreator.createEventValid();
+        event.setEventDateAndHours(LocalDateTime.now().minusMinutes(5));
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
+        request.setEventId(event.getId());
+
+        when(enrollmentRepository.findById(enrollment.getId())).thenReturn(Optional.of(enrollment));
+        when(eventServices.findEventEntityById(event.getId())).thenReturn(event);
+
+
+        assertThatThrownBy(()-> enrollmentServices.update(enrollment.getId(), request))
+                .isInstanceOf(EventAlreadyOccurredException.class);
 
         BDDMockito.verify(enrollmentRepository, never()).save(any());
     }

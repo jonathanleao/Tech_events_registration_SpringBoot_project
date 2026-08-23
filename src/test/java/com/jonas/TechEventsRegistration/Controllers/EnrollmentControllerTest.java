@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.jonas.TechEventsRegistration.DTO.Enrollment.EnrollmentRequest;
 import com.jonas.TechEventsRegistration.DTO.Enrollment.EnrollmentResponse;
+import com.jonas.TechEventsRegistration.Exceptions.EventAlreadyOccurredException;
 import com.jonas.TechEventsRegistration.Exceptions.NoVacanciesAvailableException;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.ExceptionsHandler.ExceptionsHandler;
@@ -145,6 +146,38 @@ class EnrollmentControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").value("No Vacancies Available Exception"))
                 .andExpect(jsonPath("$.message").value("No vacancies dispo for this event"));
+    }
+
+    @Test
+    @DisplayName("save should throw EventAlreadyOccurredException and return the bad request message")
+    void saveShouldThrowEventAlreadyOccurredExceptionAndReturnBadRequestMessage() throws Exception {
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
+
+        BDDMockito.when(enrollmentServices.save(any(EnrollmentRequest.class)))
+                .thenThrow(new EventAlreadyOccurredException("you can´t not subscribe, the event is already occurred "));
+
+        mockMvc.perform(post("/Enrollments/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Event Already Occurred Exception"))
+                .andExpect(jsonPath("$.message").value("you can´t not subscribe, the event is already occurred "));
+    }
+
+    @Test
+    @DisplayName("update should throw EventAlreadyOccurredException and return the bad request message")
+    void updateShouldThrowEventAlreadyOccurredExceptionAndReturnBadRequestMessage() throws Exception {
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequestUpdated();
+
+        BDDMockito.when(enrollmentServices.update(eq(1L), any(EnrollmentRequest.class)))
+                .thenThrow(new EventAlreadyOccurredException("you can´t not subscribe, the event is already occurred "));
+
+        mockMvc.perform(put("/Enrollments/admin/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Event Already Occurred Exception"))
+                .andExpect(jsonPath("$.message").value("you can´t not subscribe, the event is already occurred "));
     }
 
     @Test
