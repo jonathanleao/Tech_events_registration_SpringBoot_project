@@ -1,145 +1,193 @@
 package com.jonas.TechEventsRegistration.Controllers;
 
-import com.jonas.TechEventsRegistration.DTO.EnrollmentRequests.EnrollmentPostRequest;
-import com.jonas.TechEventsRegistration.DTO.EnrollmentRequests.EnrollmentPutRequest;
-import com.jonas.TechEventsRegistration.Entity.Enrollment;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.jonas.TechEventsRegistration.DTO.Enrollment.EnrollmentRequest;
+import com.jonas.TechEventsRegistration.DTO.Enrollment.EnrollmentResponse;
+import com.jonas.TechEventsRegistration.Exceptions.EventAlreadyOccurredException;
+import com.jonas.TechEventsRegistration.Exceptions.NoVacanciesAvailableException;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
+import com.jonas.TechEventsRegistration.ExceptionsHandler.ExceptionsHandler;
 import com.jonas.TechEventsRegistration.Services.EnrollmentServices;
-import com.jonas.TechEventsRegistration.util.EnrollmentCreator;
-import com.jonas.TechEventsRegistration.util.RequestsCreator.EnrollmentPostAndPutCreator;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import com.jonas.TechEventsRegistration.util.RequestsCreator.EnrollmentRequestCreator;
+import com.jonas.TechEventsRegistration.util.ResponseCreator.EnrollmentResponseCreator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.BDDMockito;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDate;
 import java.util.List;
 
-@ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest(EnrollmentController.class)
+@Import(ExceptionsHandler.class)
+@AutoConfigureMockMvc(addFilters = false)
 class EnrollmentControllerTest {
 
-    @InjectMocks
-    private EnrollmentController enrollmentController;
+    @Autowired
+    private MockMvc mockMvc;
 
-    @Mock
+    @MockitoBean
     private EnrollmentServices enrollmentServices;
 
-    @BeforeEach
-    void setUp() {
-        PageImpl<Enrollment> enrollmentPage = new PageImpl<>(List.of(EnrollmentCreator.enrollmentCreatorValid()));
-        BDDMockito.when(enrollmentServices.findAll(ArgumentMatchers.any())).thenReturn(enrollmentPage);
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
 
-        BDDMockito.when(enrollmentServices.findById(ArgumentMatchers.anyLong()))
-                .thenReturn(EnrollmentCreator.enrollmentCreatorValid());
+    @Test
+    @DisplayName("findAll should return the mapped page of enrollment responses")
+    void findAllShouldReturnMappedPageOfEnrollmentResponses() throws Exception {
+        EnrollmentResponse response = EnrollmentResponseCreator.createEnrollmentResponse();
+        Page<EnrollmentResponse> page = new PageImpl<>(List.of(response), PageRequest.of(0, 10),1);
 
-        BDDMockito.when(enrollmentServices.save(ArgumentMatchers.any(EnrollmentPostRequest.class)))
-                .thenReturn(EnrollmentCreator.enrollmentCreatorValid());
+        BDDMockito.when(enrollmentServices.findAll(any(Pageable.class))).thenReturn(page);
 
-        BDDMockito.when(enrollmentServices.update(ArgumentMatchers.any(EnrollmentPutRequest.class)))
-                .thenReturn(EnrollmentCreator.enrollmentCreatorUpdated());
-
-        BDDMockito.willDoNothing().given(enrollmentServices).delete(ArgumentMatchers.anyLong());
+        mockMvc.perform(get("/Enrollments/admin")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].participant.email").value(response.getParticipant().getEmail()))
+                .andExpect(jsonPath("$.content[0].event.eventName").value(response.getEvent().getEventName()));
     }
 
     @Test
-    @DisplayName("Return list of Enrollments page when successful")
-    void testReturnListOfEnrollmentsPageWhenSuccessful() {
-        Long expectedEventId = EnrollmentCreator.enrollmentCreatorValid().getEvent().getId();
-        Long expectedParticipantId = EnrollmentCreator.enrollmentCreatorValid().getParticipant().getId();
-        LocalDate enrollmentDate = EnrollmentCreator.enrollmentCreatorValid().getEnrollmentDate();
+    @DisplayName("findById should return the mapped enrollment response")
+    void findByIdShouldReturnMappedEnrollmentResponse() throws Exception {
+        EnrollmentResponse response = EnrollmentResponseCreator.createEnrollmentResponse();
 
-        Page<Enrollment> body = enrollmentController.findAll(null).getBody();
+        BDDMockito.when(enrollmentServices.findById(response.getId())).thenReturn(response);
 
-        Assertions.assertThat(body).isNotNull();
-        Assertions.assertThat(body.toList()).isNotEmpty()
-                .hasSize(1);
-        Assertions.assertThat(body.toList().get(0).getParticipant().getId()).isEqualTo(expectedParticipantId);
-        Assertions.assertThat(body.toList().get(0).getEvent().getId()).isEqualTo(expectedEventId);
-        Assertions.assertThat(body.toList().get(0).getEnrollmentDate()).isEqualTo(enrollmentDate);
-
+        mockMvc.perform(get("/Enrollments/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(response.getId()))
+                .andExpect(jsonPath("$.participant.email").value(response.getParticipant().getEmail()))
+                .andExpect(jsonPath("$.event.eventName").value(response.getEvent().getEventName()));
     }
 
     @Test
-    @DisplayName("Return enrollment when successful")
-    void testFindByIdReturnEnrollmentWhenSuccessful() {
-        Long expectedEventId = EnrollmentCreator.enrollmentCreatorValid().getEvent().getId();
-        Long expectedParticipantId = EnrollmentCreator.enrollmentCreatorValid().getParticipant().getId();
-        LocalDate enrollmentDate = EnrollmentCreator.enrollmentCreatorValid().getEnrollmentDate();
+    @DisplayName("save should create and return the enrollment response")
+    void saveShouldCreateAndReturnEnrollmentResponse() throws Exception {
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
+        EnrollmentResponse response = EnrollmentResponseCreator.createEnrollmentResponse();
 
-        ResponseEntity<Enrollment> ById = enrollmentController.findById(1L);
+        BDDMockito.when(enrollmentServices.save(any(EnrollmentRequest.class))).thenReturn(response);
 
-        Assertions.assertThat(ById.getBody()).isNotNull();
-        Assertions.assertThat(ById.getBody().getParticipant().getId()).isEqualTo(expectedParticipantId);
-        Assertions.assertThat(ById.getBody().getEvent().getId()).isEqualTo(expectedEventId);
-        Assertions.assertThat(ById.getBody().getEnrollmentDate()).isEqualTo(enrollmentDate);
+        mockMvc.perform(post("/Enrollments/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(response.getId()))
+                .andExpect(jsonPath("$.event.eventName").value(response.getEvent().getEventName()))
+                .andExpect(jsonPath("$.participant.participantName").value(response.getParticipant().getParticipantName()));
 
+        verify(enrollmentServices).save(any(EnrollmentRequest.class));
     }
 
     @Test
-    @DisplayName("Return not found exception when Enrollment is not found")
-    void testFindByIdReturnNotFoundExceptionWhenEnrollmentIsNotFound() {
-        BDDMockito.when(enrollmentServices.findById(ArgumentMatchers.anyLong()))
-                .thenThrow(new NotFoundException("Id not found"));
+    @DisplayName("update should update and return the enrollment response")
+    void updateShouldUpdateAndReturnEnrollmentResponse() throws Exception {
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequestUpdated();
+        EnrollmentResponse response = EnrollmentResponseCreator.createEnrollmentResponseUpdated();
 
-        Assertions.assertThatExceptionOfType(NotFoundException.class)
-                .isThrownBy(() -> enrollmentController.findById(1L));
+        BDDMockito.when(enrollmentServices.update(eq(1L), any(EnrollmentRequest.class))).thenReturn(response);
+
+        mockMvc.perform(put("/Enrollments/admin/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(response.getId().intValue()))
+                .andExpect(jsonPath("$.participant.email").value(response.getParticipant().getEmail()));
+
+        verify(enrollmentServices).update(eq(1L), any(EnrollmentRequest.class));
     }
 
     @Test
-    @DisplayName("save enrollment when successful")
-    void testSaveReturnEnrollmentWhenSuccessful() {
-        Long expectedEventId = EnrollmentCreator.enrollmentCreatorValid().getEvent().getId();
-        Long expectedParticipantId = EnrollmentCreator.enrollmentCreatorValid().getParticipant().getId();
-        LocalDate enrollmentDate = EnrollmentCreator.enrollmentCreatorValid().getEnrollmentDate();
+    @DisplayName("findById should throw NotFoundException and return the not found message")
+    void findByIdShouldThrowNotFoundExceptionAndReturnNotFoundMessage() throws Exception {
+        BDDMockito.when(enrollmentServices.findById(99L))
+                .thenThrow(new NotFoundException("enrollment not Found whit id: 99"));
 
-        ResponseEntity<Enrollment> save = enrollmentController
-                .save(EnrollmentPostAndPutCreator.createEnrollmentPostRequest());
-
-        Assertions.assertThat(save.getBody()).isNotNull();
-        Assertions.assertThat(save.getBody().getParticipant().getId()).isEqualTo(expectedParticipantId);
-        Assertions.assertThat(save.getBody().getEvent().getId()).isEqualTo(expectedEventId);
-        Assertions.assertThat(save.getBody().getEnrollmentDate()).isEqualTo(enrollmentDate);
-
+        mockMvc.perform(get("/Enrollments/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Not Found Exception"))
+                .andExpect(jsonPath("$.message").value("enrollment not Found whit id: 99"));
     }
 
     @Test
-    @DisplayName("Update enrollment when successful")
-    void testUpdateReturnEnrollmentWhenSuccessful() {
-        Long expectedEventId = EnrollmentCreator.enrollmentCreatorUpdated().getEvent().getId();
-        Long expectedParticipantId = EnrollmentCreator.enrollmentCreatorUpdated().getParticipant().getId();
-        LocalDate enrollmentDate = EnrollmentCreator.enrollmentCreatorUpdated().getEnrollmentDate();
+    @DisplayName("save should throw NoVacanciesAvailableException and return the bad request message")
+    void saveShouldThrowNoVacanciesAvailableExceptionAndReturnBadRequestMessage() throws Exception {
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
 
-        ResponseEntity<Enrollment> update = enrollmentController
-                .update(EnrollmentPostAndPutCreator.createEnrollmentPutRequest());
+        BDDMockito.when(enrollmentServices.save(any(EnrollmentRequest.class)))
+                .thenThrow(new NoVacanciesAvailableException("No vacancies dispo for this event"));
 
-        Assertions.assertThat(update.getBody()).isNotNull();
-        Assertions.assertThat(update.getBody().getParticipant().getId()).isEqualTo(expectedParticipantId);
-        Assertions.assertThat(update.getBody().getEvent().getId()).isEqualTo(expectedEventId);
-        Assertions.assertThat(update.getBody().getEnrollmentDate()).isEqualTo(enrollmentDate);
-
+        mockMvc.perform(post("/Enrollments/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("No Vacancies Available Exception"))
+                .andExpect(jsonPath("$.message").value("No vacancies dispo for this event"));
     }
 
     @Test
-    @DisplayName("delete enrollment and return void when successful")
-    void testDeleteReturnVoidWhenSuccessful() {
-        Long id = EnrollmentCreator.enrollmentCreatorValid().getId();
+    @DisplayName("save should throw EventAlreadyOccurredException and return the bad request message")
+    void saveShouldThrowEventAlreadyOccurredExceptionAndReturnBadRequestMessage() throws Exception {
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
 
-        ResponseEntity<Void> delete = enrollmentController.delete(id);
+        BDDMockito.when(enrollmentServices.save(any(EnrollmentRequest.class)))
+                .thenThrow(new EventAlreadyOccurredException("you can´t not subscribe, the event is already occurred "));
 
-        Assertions.assertThat(delete.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        mockMvc.perform(post("/Enrollments/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Event Already Occurred Exception"))
+                .andExpect(jsonPath("$.message").value("you can´t not subscribe, the event is already occurred "));
     }
 
+    @Test
+    @DisplayName("update should throw EventAlreadyOccurredException and return the bad request message")
+    void updateShouldThrowEventAlreadyOccurredExceptionAndReturnBadRequestMessage() throws Exception {
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequestUpdated();
+
+        BDDMockito.when(enrollmentServices.update(eq(1L), any(EnrollmentRequest.class)))
+                .thenThrow(new EventAlreadyOccurredException("you can´t not subscribe, the event is already occurred "));
+
+        mockMvc.perform(put("/Enrollments/admin/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Event Already Occurred Exception"))
+                .andExpect(jsonPath("$.message").value("you can´t not subscribe, the event is already occurred "));
+    }
+
+    @Test
+    @DisplayName("delete should return no content when enrollment is removed")
+    void deleteShouldReturnNoContentWhenEnrollmentIsRemoved() throws Exception {
+        doNothing().when(enrollmentServices).delete(1L);
+
+        mockMvc.perform(delete("/Enrollments/admin/1"))
+                .andExpect(status().isNoContent());
+
+        verify(enrollmentServices).delete(1L);
+    }
 }

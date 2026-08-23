@@ -1,10 +1,10 @@
 package com.jonas.TechEventsRegistration.Controllers;
 
-import com.jonas.TechEventsRegistration.DTO.ParticipantRequest.ParticipantPostRequest;
-import com.jonas.TechEventsRegistration.DTO.ParticipantRequest.ParticipantPutRequest;
-import com.jonas.TechEventsRegistration.Entity.Participant;
+import com.jonas.TechEventsRegistration.DTO.Participant.ParticipantRequest;
+import com.jonas.TechEventsRegistration.DTO.Participant.ParticipantResponse;
 import com.jonas.TechEventsRegistration.Services.ParticipantServices;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,30 +25,30 @@ public class ParticipantController {
 
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<Participant>> findAll(@Parameter(hidden = true) Pageable pageable) {
+    public ResponseEntity<Page<ParticipantResponse>> findAll(@Parameter(hidden = true) Pageable pageable) {
         return new ResponseEntity<>(participantServices.findAll(pageable), HttpStatus.OK);
     }
 
     @GetMapping(path = "/{id}")
-    public ResponseEntity<Participant> findById(@PathVariable Long id) {
+    public ResponseEntity<ParticipantResponse> findById(@PathVariable Long id) {
         return new ResponseEntity<>(participantServices.findById(id), HttpStatus.OK);
     }
 
     @GetMapping(path = "/find")
-    public ResponseEntity<List<Participant>> findByName(@RequestParam String name) {
+    public ResponseEntity<List<ParticipantResponse>> findByName(@RequestParam String name) {
         return new ResponseEntity<>(participantServices.findByName(name), HttpStatus.OK);
     }
 
     @PostMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Participant> save(@RequestBody ParticipantPostRequest participantPostRequest) {
-        return new ResponseEntity<>(participantServices.save(participantPostRequest), HttpStatus.CREATED);
+    public ResponseEntity<ParticipantResponse> save(@RequestBody ParticipantRequest participantRequest) {
+        return new ResponseEntity<>(participantServices.save(participantRequest), HttpStatus.CREATED);
     }
 
-    @PutMapping("/admin")
+    @PutMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Participant> update(@RequestBody ParticipantPutRequest participantPutRequest) {
-        return new ResponseEntity<>(participantServices.update(participantPutRequest), HttpStatus.OK);
+    public ResponseEntity<ParticipantResponse> update(@PathVariable Long id, @Valid @RequestBody ParticipantRequest participantPutRequest) {
+        return new ResponseEntity<>(participantServices.update(id, participantPutRequest), HttpStatus.OK);
     }
 
     @DeleteMapping(path = "/admin/{id}")

@@ -1,211 +1,157 @@
 package com.jonas.TechEventsRegistration.Controllers;
 
-import com.jonas.TechEventsRegistration.DTO.ParticipantRequest.ParticipantPostRequest;
-import com.jonas.TechEventsRegistration.DTO.ParticipantRequest.ParticipantPutRequest;
-import com.jonas.TechEventsRegistration.Entity.Participant;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.jonas.TechEventsRegistration.DTO.Participant.ParticipantRequest;
+import com.jonas.TechEventsRegistration.DTO.Participant.ParticipantResponse;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
+import com.jonas.TechEventsRegistration.ExceptionsHandler.ExceptionsHandler;
 import com.jonas.TechEventsRegistration.Services.ParticipantServices;
-import com.jonas.TechEventsRegistration.util.ParticipantCreator;
-import com.jonas.TechEventsRegistration.util.RequestsCreator.ParticipantPostAndPutCreator;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import com.jonas.TechEventsRegistration.util.RequestsCreator.ParticipantRequestCreator;
+import com.jonas.TechEventsRegistration.util.ResponseCreator.ParticipantResponseCreator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.BDDMockito;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Collections;
 import java.util.List;
 
-@ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest(ParticipantController.class)
+@Import(ExceptionsHandler.class)
+@AutoConfigureMockMvc(addFilters = false)
 class ParticipantControllerTest {
 
-    @InjectMocks
-    private ParticipantController participantController;
+    @Autowired
+    private MockMvc mockMvc;
 
-    @Mock
+    @MockitoBean
     private ParticipantServices participantServices;
 
-    @BeforeEach
-    void setUp() {
-        PageImpl<Participant> participantPage = new PageImpl<>(List.of(ParticipantCreator.createParticipantValid()));
-        BDDMockito.when(participantServices.findAll(ArgumentMatchers.any())).thenReturn(participantPage);
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
 
-        BDDMockito.when(participantServices.findById(ArgumentMatchers.anyLong()))
-                .thenReturn(ParticipantCreator.createParticipantValid());
+    @Test
+    @DisplayName("findAll should return the mapped page of participant responses")
+    void findAllShouldReturnMappedPageOfParticipantResponses() throws Exception {
+        ParticipantResponse response = ParticipantResponseCreator.createParticipantResponse();
+        Page<ParticipantResponse> page = new PageImpl<>(List.of(response), PageRequest.of(0, 10), 1);
 
-        BDDMockito.when(participantServices.findByName(ArgumentMatchers.anyString()))
-                .thenReturn(List.of(ParticipantCreator.createParticipantValid()));
+        BDDMockito.when(participantServices.findAll(any(Pageable.class))).thenReturn(page);
 
-        BDDMockito.when(participantServices.save(ArgumentMatchers.any(ParticipantPostRequest.class)))
-                .thenReturn(ParticipantCreator.createParticipantValid());
-
-        BDDMockito.when(participantServices.update(ArgumentMatchers.any(ParticipantPutRequest.class)))
-                .thenReturn(ParticipantCreator.createParticipantUpdated());
-
-        BDDMockito.willDoNothing().given(participantServices).delete(ArgumentMatchers.anyLong());
-
+        mockMvc.perform(get("/Participants/admin")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].participantName").value(response.getParticipantName()))
+                .andExpect(jsonPath("$.content[0].email").value(response.getEmail()));
     }
 
     @Test
-    @DisplayName("return list of Participant page when successful")
-    void testReturnListOfParticipantsPageableWhenSuccessful() {
-        String expectedName = ParticipantCreator.createParticipantValid().getParticipantName();
-        String expectedEmail = ParticipantCreator.createParticipantValid().getEmail();
-        String expectedInstitution = ParticipantCreator.createParticipantValid().getInstitution();
-        String expectedPhoneNumber = ParticipantCreator.createParticipantValid().getPhoneNumber();
-        Long expectedId = ParticipantCreator.createParticipantValid().getId();
+    @DisplayName("findById should return the mapped participant response")
+    void findByIdShouldReturnMappedParticipantResponse() throws Exception {
+        ParticipantResponse response = ParticipantResponseCreator.createParticipantResponse();
 
-        Page<Participant> body = participantController.findAll(null).getBody();
+        BDDMockito.when(participantServices.findById(1L)).thenReturn(response);
 
-        Assertions.assertThat(body).isNotNull();
-
-        Assertions.assertThat(body.toList().get(0).getParticipantName()).isEqualTo(expectedName);
-        Assertions.assertThat(body.toList().get(0).getInstitution()).isEqualTo(expectedInstitution);
-        Assertions.assertThat(body.toList().get(0).getPhoneNumber()).isEqualTo(expectedPhoneNumber);
-        Assertions.assertThat(body.toList().get(0).getEmail()).isEqualTo(expectedEmail);
-        Assertions.assertThat(body.toList().get(0).getId()).isEqualTo(expectedId);
-
-
-        Assertions.assertThat(body).isNotEmpty()
-                .hasSize(1);
+        mockMvc.perform(get("/Participants/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.participantName").value(response.getParticipantName()))
+                .andExpect(jsonPath("$.email").value(response.getEmail()));
     }
 
     @Test
-    @DisplayName("return Participant when findById successful")
-    void testFindByIdReturnParticipantWhenSuccessful() {
-        String expectedName = ParticipantCreator.createParticipantValid().getParticipantName();
-        String expectedEmail = ParticipantCreator.createParticipantValid().getEmail();
-        String expectedInstitution = ParticipantCreator.createParticipantValid().getInstitution();
-        String expectedPhoneNumber = ParticipantCreator.createParticipantValid().getPhoneNumber();
-        Long expectedId = ParticipantCreator.createParticipantValid().getId();
+    @DisplayName("findByName should return a list of participant responses")
+    void findByNameShouldReturnListOfParticipantResponses() throws Exception {
+        ParticipantResponse response = ParticipantResponseCreator.createParticipantResponse();
 
-        ResponseEntity<Participant> byId = participantController.findById(1L);
+        BDDMockito.when(participantServices.findByName("Jonathan")).thenReturn(List.of(response));
 
-        Assertions.assertThat(byId.getBody()).isNotNull();
-
-        Assertions.assertThat(byId.getBody().getParticipantName()).isEqualTo(expectedName);
-        Assertions.assertThat(byId.getBody().getInstitution()).isEqualTo(expectedInstitution);
-        Assertions.assertThat(byId.getBody().getPhoneNumber()).isEqualTo(expectedPhoneNumber);
-        Assertions.assertThat(byId.getBody().getEmail()).isEqualTo(expectedEmail);
-        Assertions.assertThat(byId.getBody().getId()).isEqualTo(expectedId);
-
+        mockMvc.perform(get("/Participants/find").param("name", "Jonathan"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].participantName").value(response.getParticipantName()))
+                .andExpect(jsonPath("$[0].email").value(response.getEmail()));
     }
 
     @Test
-    @DisplayName("return NotFoundException when Participant is not found")
-    void testFindByIdReturnNotFoundExceptionWhenParticipantIsNotFound() {
-        BDDMockito.when(participantServices.findById(ArgumentMatchers.anyLong()))
-                .thenThrow(new NotFoundException("Id not found"));
+    @DisplayName("save should create and return the participant response")
+    void saveShouldCreateAndReturnParticipantResponse() throws Exception {
+        ParticipantRequest request = ParticipantRequestCreator.createParticipantRequest();
+        ParticipantResponse response = ParticipantResponseCreator.createParticipantResponse();
 
-        Assertions.assertThatExceptionOfType(NotFoundException.class)
-                .isThrownBy(() -> participantController.findById(1L));
+        BDDMockito.when(participantServices.save(any(ParticipantRequest.class))).thenReturn(response);
 
+        mockMvc.perform(post("/Participants/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.participantName").value(response.getParticipantName()))
+                .andExpect(jsonPath("$.email").value(response.getEmail()));
 
+        verify(participantServices).save(any(ParticipantRequest.class));
     }
 
     @Test
-    @DisplayName("return list of Participant when successful")
-    void testReturnListOfParticipantsWhenSuccessful() {
-        String expectedName = ParticipantCreator.createParticipantValid().getParticipantName();
-        String expectedEmail = ParticipantCreator.createParticipantValid().getEmail();
-        String expectedInstitution = ParticipantCreator.createParticipantValid().getInstitution();
-        String expectedPhoneNumber = ParticipantCreator.createParticipantValid().getPhoneNumber();
-        Long expectedId = ParticipantCreator.createParticipantValid().getId();
+    @DisplayName("update should update and return the participant response")
+    void updateShouldUpdateAndReturnParticipantResponse() throws Exception {
+        ParticipantRequest request = ParticipantRequestCreator.createParticipantRequestUpdated();
+        ParticipantResponse response = ParticipantResponseCreator.createParticipantResponseUpdated();
 
-        ResponseEntity<List<Participant>> byName = participantController.findByName("jon");
+        BDDMockito.when(participantServices.update(eq(1L), any(ParticipantRequest.class))).thenReturn(response);
 
-        Assertions.assertThat(byName.getBody()).isNotNull();
+        mockMvc.perform(put("/Participants/admin/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.participantName").value(response.getParticipantName()))
+                .andExpect(jsonPath("$.email").value(response.getEmail()));
 
-        Assertions.assertThat(byName.getBody().get(0).getParticipantName()).isEqualTo(expectedName);
-        Assertions.assertThat(byName.getBody().get(0).getInstitution()).isEqualTo(expectedInstitution);
-        Assertions.assertThat(byName.getBody().get(0).getPhoneNumber()).isEqualTo(expectedPhoneNumber);
-        Assertions.assertThat(byName.getBody().get(0).getEmail()).isEqualTo(expectedEmail);
-        Assertions.assertThat(byName.getBody().get(0).getId()).isEqualTo(expectedId);
-
-
-        Assertions.assertThat(byName.getBody()).isNotEmpty()
-                .hasSize(1);
+        verify(participantServices).update(eq(1L), any(ParticipantRequest.class));
     }
 
     @Test
-    @DisplayName("return empty list of Participant when Participant is not found")
-    void testReturnEmptyListOfParticipantsWhenParticipantIsNotFound() {
-        BDDMockito.when(participantServices.findByName(ArgumentMatchers.anyString()))
-                .thenReturn(Collections.emptyList());
+    @DisplayName("findById should throw NotFoundException and return the not found message")
+    void findByIdShouldThrowNotFoundExceptionAndReturnNotFoundMessage() throws Exception {
+        BDDMockito.when(participantServices.findById(99L))
+                .thenThrow(new NotFoundException("Participant not found with id: 99"));
 
-        ResponseEntity<List<Participant>> byName = participantController.findByName("NotFoundParticipant");
-
-        Assertions.assertThat(byName.getBody()).isEmpty();
-
+        mockMvc.perform(get("/Participants/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Not Found Exception"))
+                .andExpect(jsonPath("$.message").value("Participant not found with id: 99"));
     }
 
     @Test
-    @DisplayName("save Participant when findById successful")
-    void testSaveReturnParticipantWhenSuccessful() {
-        String expectedName = ParticipantCreator.createParticipantValid().getParticipantName();
-        String expectedEmail = ParticipantCreator.createParticipantValid().getEmail();
-        String expectedInstitution = ParticipantCreator.createParticipantValid().getInstitution();
-        String expectedPhoneNumber = ParticipantCreator.createParticipantValid().getPhoneNumber();
-        Long expectedId = ParticipantCreator.createParticipantValid().getId();
+    @DisplayName("delete should return no content when participant is removed")
+    void deleteShouldReturnNoContentWhenParticipantIsRemoved() throws Exception {
+        doNothing().when(participantServices).delete(1L);
 
-        ResponseEntity<Participant> save = participantController
-                .save(ParticipantPostAndPutCreator.createParticipantPostRequest());
+        mockMvc.perform(delete("/Participants/admin/1"))
+                .andExpect(status().isNoContent());
 
-        Assertions.assertThat(save.getBody()).isNotNull();
-        Assertions.assertThat(save.getBody().getParticipantName()).isEqualTo(expectedName);
-        Assertions.assertThat(save.getBody().getInstitution()).isEqualTo(expectedInstitution);
-        Assertions.assertThat(save.getBody().getPhoneNumber()).isEqualTo(expectedPhoneNumber);
-        Assertions.assertThat(save.getBody().getEmail()).isEqualTo(expectedEmail);
-        Assertions.assertThat(save.getBody().getId()).isEqualTo(expectedId);
-
-        Assertions.assertThat(save.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-
+        verify(participantServices).delete(1L);
     }
-
-    @Test
-    @DisplayName("update Participant when findById successful")
-    void testUpdateReturnParticipantWhenSuccessful() {
-        String expectedName = ParticipantCreator.createParticipantUpdated().getParticipantName();
-        String expectedEmail = ParticipantCreator.createParticipantUpdated().getEmail();
-        String expectedInstitution = ParticipantCreator.createParticipantUpdated().getInstitution();
-        String expectedPhoneNumber = ParticipantCreator.createParticipantUpdated().getPhoneNumber();
-        Long expectedId = ParticipantCreator.createParticipantUpdated().getId();
-
-        ResponseEntity<Participant> update = participantController
-                .update(ParticipantPostAndPutCreator.createParticipantPutRequest());
-
-        Assertions.assertThat(update.getBody()).isNotNull();
-        Assertions.assertThat(update.getBody().getParticipantName()).isEqualTo(expectedName);
-        Assertions.assertThat(update.getBody().getInstitution()).isEqualTo(expectedInstitution);
-        Assertions.assertThat(update.getBody().getPhoneNumber()).isEqualTo(expectedPhoneNumber);
-        Assertions.assertThat(update.getBody().getEmail()).isEqualTo(expectedEmail);
-        Assertions.assertThat(update.getBody().getId()).isEqualTo(expectedId);
-
-        Assertions.assertThat(update.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-    }
-
-    @Test
-    @DisplayName("delete participant and return void when successful")
-    void testDeleteReturnVoidWhenSuccessful() {
-        Long id = ParticipantCreator.createParticipantValid().getId();
-
-        ResponseEntity<Void> delete = participantController.delete(id);
-
-        Assertions.assertThat(delete.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    }
-
-
 }

@@ -1,4 +1,4 @@
-package com.jonas.TechEventsRegistration.Configurer.MvcConfigurer;
+package com.jonas.TechEventsRegistration.Configs;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.PageRequest;

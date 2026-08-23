@@ -23,6 +23,7 @@ public class Event {
     private String local;
     private String category;
     private Integer vacancies;
+    private Integer maxVacancies;
 
     @JoinColumn (name = "event_date_and_hours")
     @JsonFormat(pattern = "dd/MM/yyyy HH:mm")

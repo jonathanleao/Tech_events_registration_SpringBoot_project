@@ -1,7 +1,7 @@
 package com.jonas.TechEventsRegistration.Services;
 
-import com.jonas.TechEventsRegistration.DTO.ParticipantRequest.ParticipantPostRequest;
-import com.jonas.TechEventsRegistration.DTO.ParticipantRequest.ParticipantPutRequest;
+import com.jonas.TechEventsRegistration.DTO.Participant.ParticipantRequest;
+import com.jonas.TechEventsRegistration.DTO.Participant.ParticipantResponse;
 import com.jonas.TechEventsRegistration.Entity.Participant;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.Mappers.ParticipantMapper;
@@ -20,35 +20,44 @@ public class ParticipantServices {
     private final ParticipantRepository participantRepository;
     private final ParticipantMapper participantMapper;
 
-    public Page<Participant> findAll(Pageable pageable){
-        return participantRepository.findAll(pageable);
+    public Page<ParticipantResponse> findAll(Pageable pageable){
+        return participantRepository.findAll(pageable).map(participantMapper::toResponse);
     }
 
-    public Participant findById(Long id) {
+    public ParticipantResponse findById(Long id) {
+        return participantRepository.findById(id).map(participantMapper::toResponse)
+                .orElseThrow(() -> new NotFoundException("Participant not found with id: "+ id));
+    }
+
+    public Participant findParticipantEntityById(Long id){
         return participantRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Id not found"));
+                .orElseThrow(()-> new NotFoundException("Participant not found with id: "+ id));
     }
 
-    public List<Participant> findByName (String name){
-        return  participantRepository.findByParticipantNameContaining(name);
-    }
-
-    @Transactional
-    public Participant save(ParticipantPostRequest participantPostRequest) {
-        Participant participant = participantMapper.participantToPost(participantPostRequest);
-        return participantRepository.save(participant);
+    public List<ParticipantResponse> findByName (String name){
+        return participantRepository.findByParticipantNameContaining(name)
+                .stream().map(participantMapper::toResponse).toList();
     }
 
     @Transactional
-    public Participant update(ParticipantPutRequest participantPutRequest) {
-        Participant participant = findById(participantPutRequest.getId());
-        participantMapper.participantToPut(participantPutRequest, participant);
-        return participantRepository.save(participant);
+    public ParticipantResponse save(ParticipantRequest participantRequest) {
+        Participant entity = participantMapper.toEntity(participantRequest);
+        Participant entitySaved = participantRepository.save(entity);
+        return participantMapper.toResponse(entitySaved);
+    }
+
+    @Transactional
+    public ParticipantResponse update(Long id,ParticipantRequest participantRequest ) {
+       findParticipantEntityById(id);
+        Participant entity = participantMapper.toEntity(participantRequest);
+        entity.setId(id);
+        Participant entitySaved = participantRepository.save(entity);
+        return participantMapper.toResponse(entitySaved);
     }
 
     @Transactional
     public void delete(Long id) {
-        findById(id);
+        findParticipantEntityById(id);
         participantRepository.deleteById(id);
     }
 }

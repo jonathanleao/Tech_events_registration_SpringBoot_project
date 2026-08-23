@@ -1,9 +1,10 @@
 package com.jonas.TechEventsRegistration.Services;
 
-import com.jonas.TechEventsRegistration.DTO.EventRequests.EventPostRequest;
-import com.jonas.TechEventsRegistration.DTO.EventRequests.EventPutRequest;
+import com.jonas.TechEventsRegistration.DTO.Event.EventRequest;
+import com.jonas.TechEventsRegistration.DTO.Event.EventResponse;
 import com.jonas.TechEventsRegistration.Entity.Event;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
+import com.jonas.TechEventsRegistration.Exceptions.VacanciesLimitExceedException;
 import com.jonas.TechEventsRegistration.Mappers.EventMapper;
 import com.jonas.TechEventsRegistration.Repository.EventRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,33 +21,50 @@ public class EventServices {
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
 
-    public Page<Event> findAll(Pageable pageable){
-        return eventRepository.findAll(pageable);
+    public Page<EventResponse> findAll(Pageable pageable) {
+        return eventRepository.findAll(pageable).map(eventMapper::toResponse);
     }
 
-    public Event findById(Long id){
+    public EventResponse findById(Long id) {
+        return eventRepository.findById(id).map(eventMapper::toResponse)
+                .orElseThrow(() -> new NotFoundException("Event not found with id: " + id));
+    }
+
+    public Event findEventEntityById(Long id) {
         return eventRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Id not Found"));
+                .orElseThrow(() -> new NotFoundException("Event not found with id: " + id));
     }
 
-    public List <Event> findByName(String name){
-        return eventRepository.findByEventNameContaining(name);
+    public List<EventResponse> findByName(String name) {
+        return eventRepository.findByEventNameContaining(name).stream().map(eventMapper::toResponse).toList();
     }
 
     @Transactional
-    public Event save (EventPostRequest eventPostRequest){
-        Event event = eventMapper.eventToPost(eventPostRequest);
-        return eventRepository.save(event);
+    public EventResponse save(EventRequest eventRequest) {
+        validateVacanciesMaxCapacity(eventRequest.getVacancies(), eventRequest.getMaxVacancies());
+        Event entity = eventMapper.toEntity(eventRequest);
+        Event entitySaved = eventRepository.save(entity);
+        return eventMapper.toResponse(entitySaved);
     }
+
     @Transactional
-    public Event update(EventPutRequest eventPutRequest){
-        Event event = findById(eventPutRequest.getId());
-        eventMapper.eventToPut(eventPutRequest,event);
-        return eventRepository.save(event);
+    public EventResponse update(Long id, EventRequest eventRequest) {
+        findEventEntityById(id);
+        validateVacanciesMaxCapacity(eventRequest.getVacancies(), eventRequest.getMaxVacancies());
+        Event entity = eventMapper.toEntity(eventRequest);
+        entity.setId(id);
+        eventRepository.save(entity);
+        return eventMapper.toResponse(entity);
     }
+
     @Transactional
-    public void delete(Long id){
-        findById(id);
+    public void delete(Long id) {
+        findEventEntityById(id);
         eventRepository.deleteById(id);
+    }
+    private void validateVacanciesMaxCapacity(Integer vacancies, Integer maxVacancies){
+        if (vacancies > maxVacancies){
+            throw  new VacanciesLimitExceedException("vacancies cant not Exceed the limit");
+        }
     }
 }

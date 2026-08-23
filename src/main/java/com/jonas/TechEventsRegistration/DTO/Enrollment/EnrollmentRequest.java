@@ -1,4 +1,4 @@
-package com.jonas.TechEventsRegistration.DTO.EnrollmentRequests;
+package com.jonas.TechEventsRegistration.DTO.Enrollment;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
@@ -6,18 +6,15 @@ import lombok.*;
 
 import java.time.LocalDate;
 
-@Data
 @Builder
-@NoArgsConstructor
+@Getter
+@Setter
 @AllArgsConstructor
-public class EnrollmentPutRequest {
-    @NotNull
-    private Long id;
+@NoArgsConstructor
+public class EnrollmentRequest {
+
     @NotNull
     private Long participantId;
     @NotNull
     private Long eventId;
-    @NotNull
-    @JsonFormat(pattern = "dd/MM/yyyy")
-    private LocalDate enrollmentDate;
 }

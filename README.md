@@ -1,785 +1,789 @@
-# 🎤 Tech Events Registration
+# Tech Events Registration
 
-> Um sistema completo de gerenciamento e inscrição de eventos técnicos, desenvolvido com **Spring Boot 4** e **Java 17**. Projeto educacional em desenvolvimento contínuo.
+API REST para gestão de eventos técnicos, participantes e inscrições, desenvolvida em Java com Spring Boot.
 
-[![Java](https://img.shields.io/badge/Java-17-orange?style=flat-square)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.6-brightgreen?style=flat-square)](https://spring.io/projects/spring-boot)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0-blue?style=flat-square)](https://www.mysql.com/)
-[![Maven](https://img.shields.io/badge/Maven-3.8+-red?style=flat-square)](https://maven.apache.org/)
-[![Status](https://img.shields.io/badge/Status-Em%20Desenvolvimento-yellow?style=flat-square)]()
+## Visão geral
 
----
+O Tech Events Registration é uma aplicação de cadastro e acompanhamento de eventos, com foco em:
 
-## 📋 Índice
+- cadastro e consulta de eventos;
+- cadastro e consulta de participantes;
+- criação de inscrições em eventos;
+- controle de vagas por evento;
+- paginação de listagens;
+- respostas padronizadas de erro;
+- autenticação básica com Spring Security para ações administrativas.
 
-- [Visão Geral](#visão-geral)
-- [Stack Tecnológico](#stack-tecnológico)
-- [Arquitetura](#arquitetura)
-- [Instalação](#instalação)
-- [Como Executar](#como-executar)
-- [Endpoints da API](#endpoints-da-api)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Diagrama ER](#diagrama-er)
-- [Status do Desenvolvimento](#status-do-desenvolvimento)
-- [Próximas Melhorias](#próximas-melhorias)
-- [Testando com Postman](#testando-com-postman)
-- [Contribuindo](#contribuindo)
+A aplicação foi pensada como um projeto educacional para praticar arquitetura em camadas, persistência com JPA e boas práticas de API REST.
 
----
+## Stack tecnológica
 
-## 🎯 Visão Geral
+- Java 17
+- Spring Boot 4.0.6
+- Spring Web MVC
+- Spring Data JPA
+- Hibernate
+- Spring Security
+- MySQL 8+
+- H2 (presente na dependência para uso local/testes)
+- Maven
+- Lombok
+- MapStruct
+- Springdoc OpenAPI / Swagger UI
+- JUnit 5
 
-O **Tech Events Registration** é uma API REST desenvolvida com fins educacionais para praticar conceitos de desenvolvimento web moderno. O sistema permite:
+## Arquitetura
 
-- ✅ Criar, ler, atualizar e deletar **eventos técnicos**
-- ✅ Gerenciar **participantes** e seus dados
-- ✅ Realizar **inscrições** em eventos
-- ✅ Consultar informações com **paginação**
-- ✅ Tratamento robusto de **erros e exceções**
+A aplicação segue uma arquitetura em camadas, com separação clara entre responsabilidades:
 
-### 📊 Estatísticas do Projeto
-
-| Métrica | Valor |
-|---------|-------|
-| Entidades | 3 (Event, Participant, Enrollment) |
-| Endpoints | 18 |
-| Controllers | 3 |
-| Services | 3 |
-| Repositories | 3 |
-| DTOs | 6 (3 Post + 3 Put) |
-| Status | 🟡 Intermediário (em evolução) |
-
----
-
-## 🛠️ Stack Tecnológico
-
-### Backend
-- **Framework:** Spring Boot 4.0.6
-- **Linguagem:** Java 17
-- **Build Tool:** Maven 3.8+
-
-### Database
-- **SGBD:** MySQL 8.0
-- **ORM:** Spring Data JPA + Hibernate
-- **H2:** Para testes (desenvolvimento)
-
-### Dependências Principais
-- **Lombok 1.18.38** - Redução de boilerplate
-- **MapStruct 1.6.3** - Mapeamento de objetos
-- **Jackson** - Serialização JSON
-- **Spring Validation** - Validação de dados
-
-### Testes
-- **Framework:** JUnit 5 (Spring Boot Test)
-- **Tool:** Postman (testes manuais de endpoints)
-
----
-
-## 🏗️ Arquitetura
-
-O projeto segue a arquitetura em **3 camadas**:
-
-```
+```text
 ┌─────────────────────────────┐
-│     Controller              │ ← REST Endpoints
+│        Controllers          │  Recebem e validam as requisições HTTP
 ├─────────────────────────────┤
-│     Service                 │ ← Lógica de Negócio
+│          Services           │  Contêm a lógica de negócio
 ├─────────────────────────────┤
-│     Repository              │ ← Acesso a Dados
+│        Repositories        │  Acesso aos dados com Spring Data JPA
 ├─────────────────────────────┤
-│     Database (MySQL)        │ ← Persistência
+│       Entity / DTO          │  Modelos e transfer de dados
+├─────────────────────────────┤
+│          Mapper             │  Converte entidades para DTOs e vice-versa
+├─────────────────────────────┤
+│         MySQL / JPA         │  Persistência de eventos, participantes e inscrições
 └─────────────────────────────┘
 ```
 
-### Padrões Utilizados
+### Estrutura do projeto
 
-| Padrão | Descrição | Localização |
-|--------|-----------|-------------|
-| **Repository** | Abstração de dados | `Repository/` |
-| **Service** | Lógica de negócio | `Services/` |
-| **DTO** | Transferência de dados | `DTO/` |
-| **Mapper** | Conversão de objetos | `Mappers/` |
-| **Exception Handler** | Tratamento centralizado de erros | `ExceptionsHandler/` |
+```text
+src/
+├── main/
+│   ├── java/com/jonas/TechEventsRegistration/
+│   │   ├── Configs/
+│   │   │   └── SecurityConfig.java
+│   │   ├── Configurer/
+│   │   │   └── MvcConfigurer/
+│   │   │       └── MvcConfigurer.java
+│   │   ├── Controllers/
+│   │   │   ├── EventController.java
+│   │   │   ├── ParticipantController.java
+│   │   │   └── EnrollmentController.java
+│   │   ├── DTO/
+│   │   │   ├── Event/
+│   │   │   ├── Participant/
+│   │   │   └── Enrollment/
+│   │   ├── Entity/
+│   │   │   ├── Event.java
+│   │   │   ├── Participant.java
+│   │   │   └── Enrollment.java
+│   │   ├── Exceptions/
+│   │   ├── ExceptionsHandler/
+│   │   ├── Mappers/
+│   │   ├── Repository/
+│   │   ├── Services/
+│   │   └── TechEventsRegistrationApplication.java
+│   └── resources/
+│       └── application.yaml
+├── test/
+│   └── java/com/jonas/TechEventsRegistration/
+│       └── TechEventsRegistrationApplicationTests.java
+├── pom.xml
+├── mvnw
+├── mvnw.cmd
+└── README.md
+```
 
----
+## Entidades e regras de negócio
 
-## 📦 Instalação
+### Event
+
+Campos da entidade:
+
+- id
+- eventName
+- description
+- local
+- category
+- vacancies
+- maxVacancies
+- eventDateAndHours
+
+Regra principal:
+
+- `vacancies` não pode exceder `maxVacancies`.
+- `vacancies` representa o número atual de vagas disponíveis.
+
+### Participant
+
+Campos:
+
+- id
+- participantName
+- email
+- phoneNumber
+- institution
+
+Validação aplicada:
+
+- `email` deve ser válido pelo Bean Validation;
+- campos obrigatórios são validados na camada de DTO.
+
+### Enrollment
+
+Relaciona um `Participant` com um `Event`:
+
+- id
+- participant
+- event
+- enrollmentDate
+
+Regras principais:
+
+- ao criar a inscrição, a quantidade de vagas do evento é decrementada;
+- ao remover a inscrição, a vaga é devolvida;
+- se a quantidade de vagas chegar a zero, a aplicação rejeita novas inscrições;
+- a inscrição só é permitida se o evento ainda não ocorreu;
+- se o evento já estiver passado, a aplicação lança `EventAlreadyOccurredException`.
+
+Validações adicionadas recentemente:
+
+- `validateEventHasNotOccurred(event)` em `EnrollmentServices`;
+- `save` e `update` bloqueiam inscrições quando `eventDateAndHours` é anterior ao horário atual;
+- exceção tratada globalmente pelo `ExceptionsHandler` com status `400 Bad Request`;
+- o payload de erro padrão inclui `title`, `message`, `status` e `timestamp`.
+
+## Dependências e configuração
+
+O projeto usa as dependências principais abaixo, definidas no `pom.xml`:
+
+- `spring-boot-starter-data-jpa`
+- `spring-boot-starter-security`
+- `spring-boot-starter-webmvc`
+- `spring-boot-starter-validation`
+- `mysql-connector-j`
+- `h2`
+- `spring-boot-h2console`
+- `lombok`
+- `mapstruct`
+- `spring-boot-devtools`
+- `spring-boot-starter-test`
+- `springdoc-openapi-starter-webmvc-ui`
+
+### Configuração de banco
+
+O arquivo `src/main/resources/application.yaml` é o ponto de configuração principal:
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/tech_events?createDatabaseIfNotExist=true
+    username: root
+    password: jjnic@j0n
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+```
+
+Antes de iniciar a aplicação, certifique-se de que o MySQL esteja ativo e que o banco `tech_events` exista ou possa ser criado automaticamente.
+
+Se quiser testar com banco em memória em vez do MySQL, é possível ajustar a configuração para H2, mas o projeto foi estruturado para uso com MySQL como base principal.
+
+## Como rodar a aplicação
 
 ### Pré-requisitos
 
-- ✔️ Java 17+ instalado
-- ✔️ Maven 3.8+ instalado
-- ✔️ MySQL 8.0+ instalado e rodando
-- ✔️ Git instalado
+- Java 17+
+- Maven 3.8+
+- MySQL 8+
+- Docker + Docker Compose (opcional, mas suportado)
+- Git
 
-### Passo 1: Clonar o Repositório
+### Opção 1: execução local com Maven
+
+#### 1) Clonar o repositório
 
 ```bash
 git clone https://github.com/seu-usuario/TechEventsRegistration.git
 cd TechEventsRegistration
 ```
 
-### Passo 2: Configurar Banco de Dados MySQL
+#### 2) Configurar o banco
 
-Abra o MySQL e execute:
+Crie o banco ou deixe o Spring criar automaticamente com `createDatabaseIfNotExist=true`:
 
 ```sql
--- Criar banco de dados
-CREATE DATABASE tech_events CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- Verificar criação
-SHOW DATABASES;
+CREATE DATABASE tech_events;
 ```
 
-### Passo 3: Configurar Conexão do Banco
-
-Edite o arquivo `src/main/resources/application.yaml`:
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/tech_events?createDatabaseIfNotExist=true
-    username: root
-    password: sua_senha_aqui
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: update  # Cria/atualiza tabelas automaticamente
-    show-sql: true
-```
-
-### Passo 4: Instalar Dependências
+#### 3) Instalar dependências
 
 ```bash
 mvn clean install
 ```
 
----
-
-## 🚀 Como Executar
-
-### Opção 1: Executar via Maven
+#### 4) Executar a aplicação
 
 ```bash
 mvn spring-boot:run
 ```
 
-A aplicação iniciará em `http://localhost:8080`
+A aplicação sobe em:
 
-### Opção 2: Build e Executar JAR
+```text
+http://localhost:8080
+```
+
+### Opção 2: execução com Docker Compose
+
+O projeto já inclui suporte para containerização com `Dockerfile` e `compose.yaml`.
+
+#### 1) Ajustar variáveis de ambiente
+
+O arquivo `.env-example` deve ser copiado para `.env` e preenchido com as credenciais do banco:
 
 ```bash
-# Build
-mvn clean package
-
-# Executar o JAR
-java -jar target/TechEventsRegistration-0.0.1-SNAPSHOT.jar
+cp .env-example .env
 ```
 
-### Opção 3: Executar via IDE
+Conteúdo esperado:
 
-1. Abra no IntelliJ IDEA ou Eclipse
-2. Clique em `Run` → `Run 'TechEventsRegistrationApplication'`
-
----
-
-## 📡 Endpoints da API
-
-### Base URL
-```
-http://localhost:8080/api
+```env
+DB_USERNAME=root
+DB_PASSWORD=sua_senha
 ```
 
-### 🎤 Events (Eventos)
+#### 2) Subir a stack
 
-#### Listar todos os eventos (Paginado)
+```bash
+docker compose up --build
+```
+
+Esse comando provisiona:
+
+- a API Spring Boot em `http://localhost:8080`
+- um container MySQL em `localhost:3306`
+- a base de dados `techEvents` configurada no `compose.yaml`
+
+#### 3) Parar os containers
+
+```bash
+docker compose down
+```
+
+Se quiser remover também o volume do banco:
+
+```bash
+docker compose down -v
+```
+
+## Segurança e autenticação
+
+A API usa Spring Security com autenticação HTTP Basic.
+
+### Usuários em memória
+
+No `SecurityConfig`, existem dois usuários cadastrados:
+
+- `Jonathan Leão` / `adminSenha` -> roles `USER`, `ADMIN`
+- `Jonas` / `userSenha` -> role `USER`
+
+### Regras
+
+- endpoints públicos: consultas e leitura sem autenticação;
+- endpoints com `/admin` exigem autenticação e perfil de administrador;
+- ações de criação, atualização e exclusão em eventos, participantes e inscrições estão protegidas.
+
+Exemplo de autenticação via curl:
+
+```bash
+curl -u 'Jonathan Leão:adminSenha' http://localhost:8080/Events/admin?page=0\&size=6
+```
+
+No Postman, use a aba Authorization e selecione `Basic Auth`.
+
+## Swagger / OpenAPI
+
+Como o projeto inclui `springdoc-openapi-starter-webmvc-ui`, a documentação interativa fica em:
+
+```text
+http://localhost:8080/swagger-ui/index.html
+```
+
+A documentação em JSON fica em:
+
+```text
+http://localhost:8080/v3/api-docs
+```
+
+## Endpoints da API
+
+A base da API é:
+
+```text
+http://localhost:8080
+```
+
+### Visão geral dos endpoints
+
+| Método | Rota | Autenticação | Descrição |
+|---|---|---|---|
+| GET | `/Events/admin` | ADMIN | Lista paginada de eventos |
+| GET | `/Events/{id}` | Pública | Busca evento por id |
+| GET | `/Events/find` | Pública | Busca evento por nome |
+| POST | `/Events/admin` | ADMIN | Cria evento |
+| PUT | `/Events/admin/{id}` | ADMIN | Atualiza evento |
+| DELETE | `/Events/admin/{id}` | ADMIN | Remove evento |
+| GET | `/Participants/admin` | ADMIN | Lista paginada de participantes |
+| GET | `/Participants/{id}` | Pública | Busca participante por id |
+| GET | `/Participants/find` | Pública | Busca participante por nome |
+| POST | `/Participants/admin` | ADMIN | Cria participante |
+| PUT | `/Participants/admin/{id}` | ADMIN | Atualiza participante |
+| DELETE | `/Participants/admin/{id}` | ADMIN | Remove participante |
+| GET | `/Enrollments/admin` | ADMIN | Lista paginada de inscrições |
+| GET | `/Enrollments/{id}` | Pública | Busca inscrição por id |
+| POST | `/Enrollments/admin` | ADMIN | Cria inscrição |
+| PUT | `/Enrollments/admin/{id}` | ADMIN | Atualiza inscrição |
+| DELETE | `/Enrollments/admin/{id}` | ADMIN | Remove inscrição |
+
+### 1) Eventos
+
+#### Listar eventos paginados
+
 ```http
-GET /Events?page=0&size=6
+GET /Events/admin?page=0&size=6
+Authorization: Basic <base64(username:password)>
 ```
 
-**Response (200 OK):**
+Exemplo com curl:
+
+```bash
+curl -u 'Jonathan Leão:adminSenha' 'http://localhost:8080/Events/admin?page=0&size=6'
+```
+
+Resposta esperada:
+
 ```json
 {
   "content": [
     {
-      "id": 1,
-      "eventName": "Spring Boot Workshop",
-      "description": "Aprenda Spring Boot do zero",
+      "eventName": "Java na prática",
+      "description": "Workshop sobre Java e Spring Boot",
       "local": "São Paulo",
       "category": "Backend",
-      "vacancies": 50,
-      "eventDateAndHours": "15/06/2026 14:30"
+      "eventDateAndHours": "2026-08-20T19:00:00"
     }
   ],
   "pageable": {
     "pageNumber": 0,
     "pageSize": 6,
-    "totalElements": 1
-  }
+    "sort": {
+      "unsorted": true,
+      "sorted": false,
+      "empty": true
+    }
+  },
+  "totalElements": 1
 }
 ```
 
 #### Buscar evento por ID
-```http
-GET /Events/{id}
-```
 
-**Exemplo:**
-```
+```http
 GET /Events/1
 ```
 
-#### Buscar eventos por nome
-```http
-GET /Events/find?name=Spring
-```
+Resposta:
 
-#### Criar novo evento
-```http
-POST /Events
-Content-Type: application/json
-
-{
-  "eventName": "React Workshop",
-  "description": "Aprenda React do zero",
-  "local": "Rio de Janeiro",
-  "category": "Frontend",
-  "vacancies": 40,
-  "eventDateAndHours": "20/06/2026 15:00"
-}
-```
-
-**Response (201 Created):**
 ```json
 {
-  "id": 2,
-  "eventName": "React Workshop",
-  "description": "Aprenda React do zero",
-  "local": "Rio de Janeiro",
-  "category": "Frontend",
-  "vacancies": 40,
-  "eventDateAndHours": "20/06/2026 15:00"
-}
-```
-
-#### Atualizar evento
-```http
-PUT /Events
-Content-Type: application/json
-
-{
-  "id": 1,
-  "eventName": "Spring Boot Workshop - Atualizado",
-  "description": "Aprenda Spring Boot avançado",
+  "eventName": "Java na prática",
+  "description": "Workshop sobre Java e Spring Boot",
   "local": "São Paulo",
   "category": "Backend",
-  "vacancies": 100,
-  "eventDateAndHours": "25/06/2026 14:30"
+  "eventDateAndHours": "2026-08-20T19:00:00"
 }
 ```
 
-#### Deletar evento
+#### Buscar eventos por nome
+
 ```http
-DELETE /Events/{id}
+GET /Events/find?name=Java
 ```
 
-**Response (204 No Content)** - Sem corpo
+#### Criar evento
 
----
-
-### 👥 Participants (Participantes)
-
-#### Listar todos os participantes (Paginado)
 ```http
-GET /Participants?page=0&size=6
+POST /Events/admin
+Content-Type: application/json
+Authorization: Basic <base64(username:password)>
+```
+
+Exemplo de payload:
+
+```json
+{
+  "eventName": "Java na prática",
+  "description": "Workshop sobre Java e Spring Boot",
+  "local": "São Paulo",
+  "category": "Backend",
+  "vacancies": 30,
+  "maxVacancies": 30,
+  "eventDateAndHours": "22/08/2026 14:30"
+}
+```
+
+Resposta de sucesso (201 Created):
+
+```json
+{
+  "eventName": "Java na prática",
+  "description": "Workshop sobre Java e Spring Boot",
+  "local": "São Paulo",
+  "category": "Backend",
+  "eventDateAndHours": "2026-08-20T19:00:00"
+}
+```
+
+Observação:
+
+- `vacancies` deve ser menor ou igual a `maxVacancies`.
+- o formato da data e hora é `dd/MM/yyyy HH:mm`.
+
+#### Atualizar evento
+
+```http
+PUT /Events/admin/1
+Content-Type: application/json
+Authorization: Basic <base64(username:password)>
+```
+
+Payload:
+
+```json
+{
+  "eventName": "Java na prática - edição",
+  "description": "Workshop avançado de Java e Spring Boot",
+  "local": "Rio de Janeiro",
+  "category": "Backend",
+  "vacancies": 20,
+  "maxVacancies": 30,
+  "eventDateAndHours": "25/08/2026 18:30"
+}
+```
+
+#### Excluir evento
+
+```http
+DELETE /Events/admin/1
+Authorization: Basic <base64(username:password)>
+```
+
+Resposta:
+
+```http
+204 No Content
+```
+
+### 2) Participantes
+
+#### Listar participantes paginados
+
+```http
+GET /Participants/admin?page=0&size=6
+Authorization: Basic <base64(username:password)>
 ```
 
 #### Buscar participante por ID
+
 ```http
-GET /Participants/{id}
+GET /Participants/1
+```
+
+Resposta:
+
+```json
+{
+  "participantName": "Jonas",
+  "email": "jonas@email.com"
+}
 ```
 
 #### Buscar participantes por nome
+
 ```http
-GET /Participants/find?name=João
+GET /Participants/find?name=Jonas
 ```
 
-#### Criar novo participante
-```http
-POST /Participants
-Content-Type: application/json
+#### Criar participante
 
+```http
+POST /Participants/admin
+Content-Type: application/json
+Authorization: Basic <base64(username:password)>
+```
+
+Payload:
+
+```json
 {
-  "participantName": "João Silva",
-  "email": "joao@example.com",
-  "phoneNumber": "11987654321",
-  "institution": "Universidade ABC"
+  "participantName": "Maria Souza",
+  "email": "maria@email.com",
+  "phoneNumber": "(92) 98765-4321",
+  "institution": "Universidade Federal do Rio de Janeiro"
+}
+```
+
+Resposta esperada (201 Created):
+
+```json
+{
+  "participantName": "Maria Souza",
+  "email": "maria@email.com"
 }
 ```
 
 #### Atualizar participante
-```http
-PUT /Participants
-Content-Type: application/json
 
+```http
+PUT /Participants/admin/1
+Content-Type: application/json
+Authorization: Basic <base64(username:password)>
+```
+
+Payload:
+
+```json
 {
-  "id": 1,
-  "participantName": "João Silva Updated",
-  "email": "joao.updated@example.com",
-  "phoneNumber": "11987654321",
-  "institution": "Universidade XYZ"
+  "participantName": "Maria Souza da Silva",
+  "email": "maria.silva@email.com",
+  "phoneNumber": "(11) 98888-8888",
+  "institution": "Universidade de São Paulo"
 }
 ```
 
-#### Deletar participante
+#### Excluir participante
+
 ```http
-DELETE /Participants/{id}
+DELETE /Participants/admin/1
+Authorization: Basic <base64(username:password)>
 ```
 
----
+Resposta:
 
-### 📝 Enrollments (Inscrições)
+```http
+204 No Content
+```
+
+### 3) Inscrições
+
+#### Listar inscrições paginadas
+
+```http
+GET /Enrollments/admin?page=0&size=6
+Authorization: Basic <base64(username:password)>
+```
 
 #### Buscar inscrição por ID
+
 ```http
-GET /Enrollments/{id}
+GET /Enrollments/1
 ```
 
-#### Criar nova inscrição
-```http
-POST /Enrollments
-Content-Type: application/json
+Resposta:
 
-{
-  "participantId": 1,
-  "eventId": 1,
-  "enrollmentDate": "12/06/2026"
-}
-```
-
-**Response (201 Created):**
 ```json
 {
   "id": 1,
   "participant": {
-    "id": 1,
-    "participantName": "João Silva",
-    "email": "joao@example.com",
-    "phoneNumber": "11987654321",
-    "institution": "Universidade ABC"
+    "participantName": "Maria Souza",
+    "email": "maria@email.com"
   },
   "event": {
-    "id": 1,
-    "eventName": "Spring Boot Workshop",
-    "description": "Aprenda Spring Boot do zero",
+    "eventName": "Java na prática",
+    "description": "Workshop sobre Java e Spring Boot",
     "local": "São Paulo",
     "category": "Backend",
-    "vacancies": 50,
-    "eventDateAndHours": "15/06/2026 14:30"
-  },
-  "enrollmentDate": "12/06/2026"
+    "eventDateAndHours": "2026-08-20T19:00:00"
+  }
 }
 ```
 
-#### Atualizar inscrição
-```http
-PUT /Enrollments
-Content-Type: application/json
+#### Criar inscrição
 
+```http
+POST /Enrollments/admin
+Content-Type: application/json
+Authorization: Basic <base64(username:password)>
+```
+
+Payload:
+
+```json
+{
+  "participantId": 1,
+  "eventId": 1
+}
+```
+
+Observação:
+
+- `enrollmentDate` não é enviado no request;
+- a data da inscrição é criada automaticamente no backend (`LocalDate.now()`) ao salvar a entidade;
+- o campo não aparece no payload do cliente e nem é exigido na API.
+
+Resposta esperada (201 Created):
+
+```json
 {
   "id": 1,
-  "participantId": 1,
-  "eventId": 2,
-  "enrollmentDate": "13/06/2026"
+  "participant": {
+    "participantName": "Maria Souza",
+    "email": "maria@email.com"
+  },
+  "event": {
+    "eventName": "Java na prática",
+    "description": "Workshop sobre Java e Spring Boot",
+    "local": "São Paulo",
+    "category": "Backend",
+    "eventDateAndHours": "2026-08-20T19:00:00"
+  }
 }
 ```
 
-#### Deletar inscrição
+Regras importantes:
+
+- ao criar uma inscrição, a API decrementa 1 vaga do evento;
+- se não houver vagas disponíveis, a aplicação responde com `400 Bad Request`;
+- se o evento já ocorreu, a resposta também é `400 Bad Request` com `Event Already Occurred Exception`.
+
+#### Atualizar inscrição
+
 ```http
-DELETE /Enrollments/{id}
-```
-
----
-
-## 📂 Estrutura do Projeto
-
-```
-TechEventsRegistration/
-├── src/
-│   ├── main/
-│   │   ├── java/com/jonas/TechEventsRegistration/
-│   │   │   ├── TechEventsRegistrationApplication.java
-│   │   │   ├── Configurer/
-│   │   │   │   └── MvcConfigurer/
-│   │   │   │       └── MvcConfigurer.java              # Configuração de Paginação
-│   │   │   ├── Controllers/
-│   │   │   │   ├── EventController.java               # REST endpoints de Events
-│   │   │   │   ├── ParticipantController.java         # REST endpoints de Participants
-│   │   │   │   └── EnrollmentController.java          # REST endpoints de Enrollments
-│   │   │   ├── Services/
-│   │   │   │   ├── EventServices.java                 # Lógica de Events
-│   │   │   │   ├── ParticipantServices.java           # Lógica de Participants
-│   │   │   │   └── EnrollmentServices.java            # Lógica de Enrollments
-│   │   │   ├── Repository/
-│   │   │   │   ├── EventRepository.java               # Query customizadas de Events
-│   │   │   │   ├── ParticipantRepository.java         # Query customizadas de Participants
-│   │   │   │   └── EnrollmentRepository.java          # Query customizadas de Enrollments
-│   │   │   ├── Entity/
-│   │   │   │   ├── Event.java                         # Entidade Event
-│   │   │   │   ├── Participant.java                   # Entidade Participant
-│   │   │   │   └── Enrollment.java                    # Entidade Enrollment (Junction)
-│   │   │   ├── DTO/
-│   │   │   │   ├── EventRequests/
-│   │   │   │   │   ├── EventPostRequest.java          # DTO para POST
-│   │   │   │   │   └── EventPutRequest.java           # DTO para PUT
-│   │   │   │   ├── ParticipantRequest/
-│   │   │   │   │   ├── ParticipantPostRequest.java    # DTO para POST
-│   │   │   │   │   └── ParticipantPutRequest.java     # DTO para PUT
-│   │   │   │   └── EnrollmentRequests/
-│   │   │   │       ├── EnrollmentPostRequest.java     # DTO para POST
-│   │   │   │       └── EnrollmentPutRequest.java      # DTO para PUT
-│   │   │   ├── Mappers/
-│   │   │   │   ├── EventMapper.java                   # Conversão Event ↔ DTO
-│   │   │   │   ├── ParticipantMapper.java             # Conversão Participant ↔ DTO
-│   │   │   │   └── EnrollmentMapper.java              # Conversão Enrollment ↔ DTO
-│   │   │   ├── Exceptions/
-│   │   │   │   ├── NotFoundException.java              # Exceção para recurso não encontrado
-│   │   │   │   ├── BadRequestException.java            # Exceção para requisição inválida
-│   │   │   │   └── ExceptionDetails/
-│   │   │   │       └── ExceptionDetails.java           # Classe padronizada de erro
-│   │   │   └── ExceptionsHandler/
-│   │   │       └── ExceptionsHandler.java              # Handler centralizado de exceções
-│   │   └── resources/
-│   │       └── application.yaml                       # Configurações da aplicação
-│   └── test/
-│       └── java/com/jonas/TechEventsRegistration/
-│           └── TechEventsRegistrationApplicationTests.java
-├── pom.xml                                            # Dependências Maven
-├── mvnw e mvnw.cmd                                    # Maven Wrapper
-└── README.md                                          # Este arquivo
-```
-
----
-
-## 📊 Diagrama ER (Entidade-Relacionamento)
-
-```
-┌──────────────────┐           ┌──────────────────┐
-│      Event       │           │   Participant    │
-├──────────────────┤           ├──────────────────┤
-│ PK: id           │◄─────────►│ PK: id           │
-│    eventName     │  1   *    │    participantName│
-│    description   │(Enrollment)│    email        │
-│    local         │           │    phoneNumber   │
-│    category      │           │    institution   │
-│    vacancies     │           │                  │
-│    eventDateAndHours          │                  │
-└──────────────────┘           └──────────────────┘
-        ▲                               ▲
-        │                               │
-        └───────────┬────────────────────┘
-                    │
-            ┌───────────────────┐
-            │    Enrollment     │
-            ├───────────────────┤
-            │ PK: id            │
-            │ FK: participant_id│
-            │ FK: event_id      │
-            │    enrollmentDate │
-            └───────────────────┘
-```
-
-### Relacionamentos
-
-- **Event (1) ← → (N) Enrollment** - Um evento pode ter múltiplas inscrições
-- **Participant (1) ← → (N) Enrollment** - Um participante pode se inscrever em múltiplos eventos
-- **Enrollment (N) ← → (N)** - Tabela de junção entre Event e Participant
-
----
-
-## 📊 Status do Desenvolvimento
-
-### ✅ Concluído
-
-- [x] Arquitetura 3 camadas (Controller → Service → Repository)
-- [x] CRUD completo para Event, Participant e Enrollment
-- [x] Paginação de resultados
-- [x] Tratamento centralizado de exceções
-- [x] DTOs separados para POST e PUT
-- [x] Mapeamento de objetos com MapStruct
-- [x] Validação de email em Participant
-- [x] Queries customizadas (find by name)
-- [x] Testes de endpoints no Postman
-- [x]Documentação Swagger/OpenAPI
-- [x] Testes unitários (JUnit 5 + Mockito)
-
-### 🟡 Em Desenvolvimento
-
-- [ ] Adicionar validações robustas (NotNull, NotBlank, Size, Pattern)
-- [ ] Implementar logging profissional (SLF4J)
-- [ ] Testes de integração
-- [ ] API Versioning (v1, v2)
-- [ ] Spring Security (Autenticação + Autorização)
-- [ ] Cache (Redis)
-
-### ⚪ Planejado
-
-- [ ] JWT Token
-- [ ] OAuth2
-- [ ] Async Operations
-- [ ] Message Queue (RabbitMQ)
-- [ ] Monitoring (Actuator, Prometheus)
-- [ ] Docker & Docker Compose
-- [ ] CI/CD Pipeline
-
----
-
-## 🚀 Próximas Melhorias
-
-### Priority 1 - Crítico
-1. **Validação Robusta** - Adicionar @NotNull, @NotBlank, @Size em todos os DTOs
-2. **Logging Profissional** - Implementar SLF4J com Logback
-
-### Priority 2 - Importante
-6. **Query Optimization** - Índices no banco e lazy loading
-
-### Priority 3 - Polimento
-7. **Async Operations** - CompletableFuture para operações longas
-8. **Cache Layer** - Redis para dados frequentes
-9. **Containerization** - Docker e Docker Compose
-
----
-
-## 🧪 Testando com Postman
-
-### Instalação do Postman
-
-1. Baixe em: https://www.postman.com/downloads/
-2. Instale e abra a aplicação
-3. Crie uma nova workspace
-
-### Importar Collection
-
-Todos os endpoints estão disponíveis para teste. Aqui está um passo-a-passo:
-
-#### 1. Criar um Evento
-```
-POST http://localhost:8080/Events
+PUT /Enrollments/admin/1
 Content-Type: application/json
+Authorization: Basic <base64(username:password)>
+```
 
+Payload:
+
+```json
 {
-  "eventName": "Java Masterclass",
-  "description": "Aprenda Java avançado",
-  "local": "São Paulo",
-  "category": "Backend",
-  "vacancies": 30,
-  "eventDateAndHours": "20/06/2026 18:00"
+  "participantId": 2,
+  "eventId": 1
 }
 ```
 
-#### 2. Criar um Participante
-```
-POST http://localhost:8080/Participants
-Content-Type: application/json
+Observação:
 
+- o `enrollmentDate` continua sendo gerado pelo sistema;
+- o update só altera a associação entre participante e evento, e não recebe data manual.
+
+#### Excluir inscrição
+
+```http
+DELETE /Enrollments/admin/1
+Authorization: Basic <base64(username:password)>
+```
+
+Resposta:
+
+```http
+204 No Content
+```
+
+## Códigos de resposta e erros
+
+A API usa respostas padronizadas por `@RestControllerAdvice`.
+
+### Códigos mais comuns
+
+- `200 OK` - operação bem-sucedida de leitura/atualização
+- `201 Created` - recurso criado com sucesso
+- `204 No Content` - exclusão bem-sucedida
+- `400 Bad Request` - dados inválidos, limite de vagas excedido, sem vagas disponíveis ou evento já ocorrido
+- `404 Not Found` - registro não encontrado
+- `500 Internal Server Error` - erro inesperado do servidor
+
+### Estruturas de erro
+
+Exemplo de erro por falta de vagas:
+
+```json
 {
-  "participantName": "Maria Santos",
-  "email": "maria@example.com",
-  "phoneNumber": "11999887766",
-  "institution": "UFRJ"
+  "title": "No Vacancies Available Exception",
+  "status": 400,
+  "timestamp": "2026-08-20T23:11:40",
+  "message": "No vacancies dispo for this event"
 }
 ```
 
-#### 3. Criar uma Inscrição
-```
-POST http://localhost:8080/Enrollments
-Content-Type: application/json
+Exemplo de erro por evento já ocorrido:
 
+```json
 {
-  "participantId": 1,
-  "eventId": 1,
-  "enrollmentDate": "12/06/2026"
+  "title": "Event Already Occurred Exception",
+  "status": 400,
+  "timestamp": "2026-08-23T00:00:00",
+  "message": "you can´t not subscribe, the event is already occurred "
 }
 ```
 
-#### 4. Buscar Eventos
-```
-GET http://localhost:8080/api/Events?page=0&size=6
-```
+## Testando a aplicação
 
-### Dicas de Teste
+### 1) Teste rápido com curl
 
-- **Variáveis de Ambiente:** Use `{{{{ baseUrl }}}}` nas requests
-- **Tests:** Adicione scripts para validar Status Code, Response Time
-- **Assertions:** Verifique que status é 201 (Created), 200 (OK), 404 (Not Found)
-- **Data Types:** JSON sempre com `Content-Type: application/json`
+#### Criar um evento
 
----
-
-## 💾 Banco de Dados MySQL
-
-### Schema Criado Automaticamente
-
-Ao iniciar a aplicação com `ddl-auto: update`, as tabelas são criadas automaticamente:
-
-```sql
--- Tabela Event
-CREATE TABLE event (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  event_name VARCHAR(255),
-  description VARCHAR(255),
-  local VARCHAR(255),
-  category VARCHAR(255),
-  vacancies INT,
-  event_date_and_hours DATETIME
-);
-
--- Tabela Participant
-CREATE TABLE participant (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  participant_name VARCHAR(255),
-  email VARCHAR(255),
-  phone_number VARCHAR(255),
-  institution VARCHAR(255)
-);
-
--- Tabela Enrollment
-CREATE TABLE enrollment (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  participant_id BIGINT,
-  event_id BIGINT,
-  enrollment_date DATE,
-  FOREIGN KEY (participant_id) REFERENCES participant(id),
-  FOREIGN KEY (event_id) REFERENCES event(id)
-);
+```bash
+curl -u 'Jonathan Leão:adminSenha' -X POST http://localhost:8080/Events/admin \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "eventName": "Java na prática",
+    "description": "Workshop sobre Java e Spring Boot",
+    "local": "São Paulo",
+    "category": "Backend",
+    "vacancies": 30,
+    "maxVacancies": 30,
+    "eventDateAndHours": "22/08/2026 14:30"
+  }'
 ```
 
-### Consultas Úteis
+#### Criar um participante
 
-```sql
--- Ver todos os eventos
-SELECT * FROM event;
-
--- Ver todos os participantes
-SELECT * FROM participant;
-
--- Ver todas as inscrições
-SELECT * FROM enrollment;
-
--- Ver inscrições de um evento
-SELECT p.participant_name, p.email, e.enrollment_date 
-FROM enrollment e
-JOIN participant p ON e.participant_id = p.id
-WHERE e.event_id = 1;
+```bash
+curl -u 'Jonathan Leão:adminSenha' -X POST http://localhost:8080/Participants/admin \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "participantName": "Maria Souza",
+    "email": "maria@email.com",
+    "phoneNumber": "(92) 98765-4321",
+    "institution": "USP"
+  }'
 ```
 
----
+#### Criar uma inscrição
 
-## 🔧 Configuração do Ambiente
-
-### application.yaml
-
-Arquivo principal de configuração:
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/tech_events?createDatabaseIfNotExist=true
-    username: root
-    password: sua_senha
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: update  # create / create-drop / update / validate
-    show-sql: true     # Mostra SQL no console (desabilitar em produção)
+```bash
+curl -u 'Jonathan Leão:adminSenha' -X POST http://localhost:8080/Enrollments/admin \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "participantId": 1,
+    "eventId": 1
+  }'
 ```
 
-### Variáveis Conforme Ambiente
+### 2) Teste via Swagger UI
 
-- **Desenvolvimento:** `show-sql: true`, `ddl-auto: update`
-- **Teste:** `ddl-auto: create-drop`, banco H2
-- **Produção:** `show-sql: false`, `ddl-auto: validate`
+1. inicie a aplicação;
+2. abra `http://localhost:8080/swagger-ui/index.html`;
+3. autentique com o usuário `Jonathan Leão` e senha `adminSenha`;
+4. teste os endpoints diretamente na interface.
 
----
+### 3) Teste via Postman
 
-## 🤝 Contribuindo
+Use as rotas listadas acima e configure autenticação básica nas requisições administrativas.
 
-Este é um projeto **pessoal de estudos**, mas contribuições e sugestões são bem-vindas!
 
-### Como Contribuir
-
-1. Faça um fork do repositório
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
-### Reportar Bugs
-
-Para reportar bugs, abra uma **Issue** descrevendo:
-- Comportamento esperado
-- Comportamento atual
-- Passos para reproduzir
-- Versão do Java/Spring Boot
-
----
-
-## 📝 Licença
-
-Este projeto é fornecido sem licença formal. Use livremente para fins educacionais.
-
----
-
-## 👨‍💻 Autor
-
-**Jonas** 
-- GitHub: [jonathanleao](https://github.com/seu-usuario)
-- Email: jonathan.oliveirajunior.23@gmail.com
-
----
-
-## 📚 Referências e Recursos
-
-### Documentação Oficial
-- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
-- [Spring Data JPA](https://spring.io/projects/spring-data-jpa)
-- [Spring Validation](https://spring.io/guides/gs/validating-form-input/)
-
-### Práticas e Padrões
-- [RESTful API Best Practices](https://restfulapi.net/)
-- [Java Design Patterns](https://refactoring.guru/design-patterns/java)
-- [Clean Code - Robert Martin](https://www.oreilly.com/library/view/clean-code-a/9780136083238/)
-
-### Ferramentas
-- [Postman Learning Center](https://learning.postman.com/)
-- [MySQL Documentation](https://dev.mysql.com/doc/)
-- [Maven Documentation](https://maven.apache.org/guides/)
-
----
-
-## 🎓 Objetivo do Projeto
-
-Este projeto foi desenvolvido com o objetivo de **praticar e aprender**:
-
-✨ Conceitos de desenvolvimento de APIs REST  
-✨ Arquitetura em camadas  
-✨ Good practices em Java e Spring Boot  
-✨ Manipulação de banco de dados relacionais  
-✨ Padrões de design (Repository, Service, DTO, Mapper)  
-✨ Tratamento de erros e exceções  
-✨ Testes de endpoints  
-
----
-
-## ⭐ Se Gostou, Deixe uma Star!
-
-Se este projeto te ajudou a aprender algo novo, considere deixar uma ⭐ no GitHub!
-
----
-
-**Última atualização:** 12 de Junho de 2026  
-**Versão:** 0.0.1-SNAPSHOT  
-**Status:** 🟡 Em Desenvolvimento
 

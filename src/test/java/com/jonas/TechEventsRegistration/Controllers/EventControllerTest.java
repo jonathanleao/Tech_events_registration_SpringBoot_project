@@ -1,215 +1,174 @@
 package com.jonas.TechEventsRegistration.Controllers;
 
-import com.jonas.TechEventsRegistration.DTO.EventRequests.EventPostRequest;
-import com.jonas.TechEventsRegistration.DTO.EventRequests.EventPutRequest;
-import com.jonas.TechEventsRegistration.Entity.Event;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.jonas.TechEventsRegistration.DTO.Event.EventRequest;
+import com.jonas.TechEventsRegistration.DTO.Event.EventResponse;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
+import com.jonas.TechEventsRegistration.Exceptions.VacanciesLimitExceedException;
+import com.jonas.TechEventsRegistration.ExceptionsHandler.ExceptionsHandler;
 import com.jonas.TechEventsRegistration.Services.EventServices;
-import com.jonas.TechEventsRegistration.util.EventCreator;
-import com.jonas.TechEventsRegistration.util.RequestsCreator.EventPostAndPutCreator;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import com.jonas.TechEventsRegistration.util.RequestsCreator.EventRequestCreator;
+import com.jonas.TechEventsRegistration.util.ResponseCreator.EventResponseCreator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.BDDMockito;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 
-@ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest(EventController.class)
+@Import(ExceptionsHandler.class)
+@AutoConfigureMockMvc(addFilters = false)
 class EventControllerTest {
 
-    @InjectMocks
-    private EventController eventController;
+    @Autowired
+    private MockMvc mockMvc;
 
-    @Mock
+    @MockitoBean
     private EventServices eventServices;
 
-    @BeforeEach
-    void setUp() {
-        PageImpl<Event> eventPage = new PageImpl<>(List.of(EventCreator.createEventValid()));
-        BDDMockito.when(eventServices.findAll(ArgumentMatchers.any())).thenReturn(eventPage);
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
 
-        BDDMockito.when(eventServices.findById(ArgumentMatchers.anyLong())).thenReturn(EventCreator.createEventValid());
+    @Test
+    @DisplayName("findAll should return the mapped page of event responses")
+    void findAllShouldReturnMappedPageOfEventResponses() throws Exception {
+        EventResponse response = EventResponseCreator.createEventResponse();
+        Page<EventResponse> page = new PageImpl<>(List.of(response), PageRequest.of(0, 10), 1);
 
-        BDDMockito.when(eventServices.findByName(ArgumentMatchers.anyString()))
-                .thenReturn(List.of(EventCreator.createEventValid()));
+        BDDMockito.when(eventServices.findAll(any(Pageable.class))).thenReturn(page);
 
-        BDDMockito.when(eventServices.save(ArgumentMatchers.any(EventPostRequest.class)))
-                .thenReturn(EventCreator.createEventValid());
-
-        BDDMockito.when(eventServices.update(ArgumentMatchers.any(EventPutRequest.class)))
-                .thenReturn(EventCreator.createEventUpdated());
-
-        BDDMockito.willDoNothing().given(eventServices).delete(ArgumentMatchers.anyLong());
+        mockMvc.perform(get("/Events/admin")
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content",hasSize(1)))
+                .andExpect(jsonPath("$.content[0].eventName").value(response.getEventName()))
+                .andExpect(jsonPath("$.content[0].category").value(response.getCategory()));
     }
 
     @Test
-    @DisplayName("return  list of events page when successful")
-    void testReturnListOfEventsPageableWhenSuccessful() {
-        String expectedEventName = EventCreator.createEventValid().getEventName();
-        String expectedCategory = EventCreator.createEventValid().getCategory();
-        Long expectedId = EventCreator.createEventValid().getId();
-        String expectedLocal = EventCreator.createEventValid().getLocal();
-        String expectedDescription = EventCreator.createEventValid().getDescription();
-        LocalDateTime expectedEventDateAndHours = EventCreator.createEventValid().getEventDateAndHours();
-        Integer expectedVacancies = EventCreator.createEventValid().getVacancies();
+    @DisplayName("findById should return the mapped event response")
+    void findByIdShouldReturnMappedEventResponse() throws Exception {
+        EventResponse response = EventResponseCreator.createEventResponse();
 
-        Page<Event> body = eventController.findAll(null).getBody();
+        BDDMockito.when(eventServices.findById(1L)).thenReturn(response);
 
-        Assertions.assertThat(body).isNotNull();
-
-        Assertions.assertThat(body.toList().get(0).getEventName()).isEqualTo(expectedEventName);
-        Assertions.assertThat(body.toList().get(0).getCategory()).isEqualTo(expectedCategory);
-        Assertions.assertThat(body.toList().get(0).getId()).isEqualTo(expectedId);
-        Assertions.assertThat(body.toList().get(0).getLocal()).isEqualTo(expectedLocal);
-        Assertions.assertThat(body.toList().get(0).getDescription()).isEqualTo(expectedDescription);
-        Assertions.assertThat(body.toList().get(0).getEventDateAndHours()).isEqualTo(expectedEventDateAndHours);
-        Assertions.assertThat(body.toList().get(0).getVacancies()).isEqualTo(expectedVacancies);
-
-        Assertions.assertThat(body).isNotEmpty()
-                .hasSize(1);
+        mockMvc.perform(get("/Events/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventName").value(response.getEventName()))
+                .andExpect(jsonPath("$.category").value(response.getCategory()));
     }
 
     @Test
-    @DisplayName("return event when findById successful")
-    void testFindByIdReturnEventWhenSuccessful() {
-        String expectedEventName = EventCreator.createEventValid().getEventName();
-        String expectedCategory = EventCreator.createEventValid().getCategory();
-        Long expectedId = EventCreator.createEventValid().getId();
-        String expectedLocal = EventCreator.createEventValid().getLocal();
-        String expectedDescription = EventCreator.createEventValid().getDescription();
-        LocalDateTime expectedEventDateAndHours = EventCreator.createEventValid().getEventDateAndHours();
-        Integer expectedVacancies = EventCreator.createEventValid().getVacancies();
+    @DisplayName("findByName should return a list of event responses")
+    void findByNameShouldReturnListOfEventResponses() throws Exception {
+        EventResponse response = EventResponseCreator.createEventResponse();
 
-        ResponseEntity<Event> byId = eventController.findById(1L);
+        BDDMockito.when(eventServices.findByName("Tech Day")).thenReturn(List.of(response));
 
-        Assertions.assertThat(byId.getBody()).isNotNull();
-
-        Assertions.assertThat(byId.getBody().getEventName()).isEqualTo(expectedEventName);
-        Assertions.assertThat(byId.getBody().getCategory()).isEqualTo(expectedCategory);
-        Assertions.assertThat(byId.getBody().getId()).isEqualTo(expectedId);
-        Assertions.assertThat(byId.getBody().getLocal()).isEqualTo(expectedLocal);
-        Assertions.assertThat(byId.getBody().getDescription()).isEqualTo(expectedDescription);
-        Assertions.assertThat(byId.getBody().getEventDateAndHours()).isEqualTo(expectedEventDateAndHours);
-        Assertions.assertThat(byId.getBody().getVacancies()).isEqualTo(expectedVacancies);
+        mockMvc.perform(get("/Events/find").param("name", "Tech Day"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].eventName").value(response.getEventName()))
+                .andExpect(jsonPath("$[0].local").value(response.getLocal()));
     }
 
     @Test
-    @DisplayName("return NotFoundException when event is not Found")
-    void testFindByIdReturnNotFoundExceptionWhenEventIsNotFound() {
-        BDDMockito.when(eventServices.findById(ArgumentMatchers.anyLong()))
-                .thenThrow(new NotFoundException("id not found"));
+    @DisplayName("save should create and return the event response")
+    void saveShouldCreateAndReturnEventResponse() throws Exception {
+        EventRequest request = EventRequestCreator.createEventRequest();
+        EventResponse response = EventResponseCreator.createEventResponse();
 
-        Assertions.assertThatExceptionOfType(NotFoundException.class)
-                .isThrownBy(() -> eventController.findById(1L));
+        BDDMockito.when(eventServices.save(any(EventRequest.class))).thenReturn(response);
 
+        mockMvc.perform(post("/Events/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.eventName").value(response.getEventName()))
+                .andExpect(jsonPath("$.description").value(response.getDescription()));
+
+        verify(eventServices).save(any(EventRequest.class));
     }
 
     @Test
-    @DisplayName("return list of events when successful")
-    void testReturnListOfEventsWhenSuccessful() {
-        String expectedEventName = EventCreator.createEventValid().getEventName();
-        String expectedCategory = EventCreator.createEventValid().getCategory();
-        Long expectedId = EventCreator.createEventValid().getId();
-        String expectedLocal = EventCreator.createEventValid().getLocal();
-        String expectedDescription = EventCreator.createEventValid().getDescription();
-        LocalDateTime expectedEventDateAndHours = EventCreator.createEventValid().getEventDateAndHours();
-        Integer expectedVacancies = EventCreator.createEventValid().getVacancies();
+    @DisplayName("update should update and return the event response")
+    void updateShouldUpdateAndReturnEventResponse() throws Exception {
+        EventRequest request = EventRequestCreator.createEventRequestUpdated();
+        EventResponse response = EventResponseCreator.createEventResponseUpdated();
 
-        ResponseEntity<List<Event>> byName = eventController.findByName("springBoot");
+        BDDMockito.when(eventServices.update(eq(1L), any(EventRequest.class))).thenReturn(response);
 
-        Assertions.assertThat(byName.getBody()).isNotNull();
+        mockMvc.perform(put("/Events/admin/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventName").value(response.getEventName()))
+                .andExpect(jsonPath("$.local").value(response.getLocal()));
 
-        Assertions.assertThat(byName.getBody().get(0).getEventName()).isEqualTo(expectedEventName);
-        Assertions.assertThat(byName.getBody().get(0).getCategory()).isEqualTo(expectedCategory);
-        Assertions.assertThat(byName.getBody().get(0).getId()).isEqualTo(expectedId);
-        Assertions.assertThat(byName.getBody().get(0).getLocal()).isEqualTo(expectedLocal);
-        Assertions.assertThat(byName.getBody().get(0).getDescription()).isEqualTo(expectedDescription);
-        Assertions.assertThat(byName.getBody().get(0).getEventDateAndHours()).isEqualTo(expectedEventDateAndHours);
-        Assertions.assertThat(byName.getBody().get(0).getVacancies()).isEqualTo(expectedVacancies);
-
-        Assertions.assertThat(byName.getBody()).isNotEmpty()
-                .hasSize(1);
+        verify(eventServices).update(eq(1L), any(EventRequest.class));
     }
 
     @Test
-    @DisplayName("return empty list of events when event is not found")
-    void testReturnEmptyListOfEventsWhenEventIsNotFound() {
-        BDDMockito.when(eventServices.findByName(ArgumentMatchers.anyString()))
-                .thenReturn(Collections.emptyList());
+    @DisplayName("findById should throw NotFoundException and return the not found message")
+    void findByIdShouldThrowNotFoundExceptionAndReturnNotFoundMessage() throws Exception {
+        BDDMockito.when(eventServices.findById(99L))
+                .thenThrow(new NotFoundException("Event not found with id: 99"));
 
-        ResponseEntity<List<Event>> byName = eventController.findByName("NotFoundEvent");
-
-        Assertions.assertThat(byName.getBody()).isEmpty();
-    }
-    @Test
-    @DisplayName("save event when findById successful")
-    void testSaveReturnEventWhenSuccessful() {
-        String expectedEventName = EventCreator.createEventValid().getEventName();
-        String expectedCategory = EventCreator.createEventValid().getCategory();
-        Long expectedId = EventCreator.createEventValid().getId();
-        String expectedLocal = EventCreator.createEventValid().getLocal();
-        String expectedDescription = EventCreator.createEventValid().getDescription();
-        LocalDateTime expectedEventDateAndHours = EventCreator.createEventValid().getEventDateAndHours();
-        Integer expectedVacancies = EventCreator.createEventValid().getVacancies();
-
-        ResponseEntity<Event> save = eventController.save(EventPostAndPutCreator.createEventPostRequest());
-
-        Assertions.assertThat(save.getBody()).isNotNull();
-
-        Assertions.assertThat(save.getBody().getEventName()).isEqualTo(expectedEventName);
-        Assertions.assertThat(save.getBody().getCategory()).isEqualTo(expectedCategory);
-        Assertions.assertThat(save.getBody().getId()).isEqualTo(expectedId);
-        Assertions.assertThat(save.getBody().getLocal()).isEqualTo(expectedLocal);
-        Assertions.assertThat(save.getBody().getDescription()).isEqualTo(expectedDescription);
-        Assertions.assertThat(save.getBody().getEventDateAndHours()).isEqualTo(expectedEventDateAndHours);
-        Assertions.assertThat(save.getBody().getVacancies()).isEqualTo(expectedVacancies);
-    }
-    @Test
-    @DisplayName("update event when findById successful")
-    void testUpdateReturnEventWhenSuccessful() {
-        String expectedEventName = EventCreator.createEventUpdated().getEventName();
-        String expectedCategory = EventCreator.createEventUpdated().getCategory();
-        Long expectedId = EventCreator.createEventUpdated().getId();
-        String expectedLocal = EventCreator.createEventUpdated().getLocal();
-        String expectedDescription = EventCreator.createEventUpdated().getDescription();
-        LocalDateTime expectedEventDateAndHours = EventCreator.createEventUpdated().getEventDateAndHours();
-        Integer expectedVacancies = EventCreator.createEventUpdated().getVacancies();
-
-        ResponseEntity<Event> update = eventController.update(EventPostAndPutCreator.createEventPutRequest());
-
-        Assertions.assertThat(update.getBody()).isNotNull();
-
-        Assertions.assertThat(update.getBody().getEventName()).isEqualTo(expectedEventName);
-        Assertions.assertThat(update.getBody().getCategory()).isEqualTo(expectedCategory);
-        Assertions.assertThat(update.getBody().getId()).isEqualTo(expectedId);
-        Assertions.assertThat(update.getBody().getLocal()).isEqualTo(expectedLocal);
-        Assertions.assertThat(update.getBody().getDescription()).isEqualTo(expectedDescription);
-        Assertions.assertThat(update.getBody().getEventDateAndHours()).isEqualTo(expectedEventDateAndHours);
-        Assertions.assertThat(update.getBody().getVacancies()).isEqualTo(expectedVacancies);
+        mockMvc.perform(get("/Events/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Not Found Exception"))
+                .andExpect(jsonPath("$.message").value("Event not found with id: 99"));
     }
 
     @Test
-    @DisplayName("delete event and return void when successful")
-    void testDeleteReturnVoidWhenSuccessful() {
-        Long id = EventCreator.createEventValid().getId();
+    @DisplayName("save should throw VacanciesLimitExceedException and return the bad request message")
+    void saveShouldThrowVacanciesLimitExceedExceptionAndReturnBadRequestMessage() throws Exception {
+        EventRequest request = EventRequestCreator.createEventRequest();
 
-        ResponseEntity<Void> delete = eventController.delete(id);
+        BDDMockito.when(eventServices.save(any(EventRequest.class)))
+                .thenThrow(new VacanciesLimitExceedException("vacancies cant not exceed the limit"));
 
-        Assertions.assertThat(delete.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        mockMvc.perform(post("/Events/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Vacancies Limit Exceed Exception"))
+                .andExpect(jsonPath("$.message").value("vacancies cant not exceed the limit"));
+    }
+
+    @Test
+    @DisplayName("delete should return no content when event is removed")
+    void deleteShouldReturnNoContentWhenEventIsRemoved() throws Exception {
+        doNothing().when(eventServices).delete(1L);
+
+        mockMvc.perform(delete("/Events/admin/1"))
+                .andExpect(status().isNoContent());
+
+        verify(eventServices).delete(1L);
     }
 }

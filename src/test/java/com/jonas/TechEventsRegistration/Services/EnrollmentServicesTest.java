@@ -1,39 +1,43 @@
 package com.jonas.TechEventsRegistration.Services;
 
-import com.jonas.TechEventsRegistration.DTO.EnrollmentRequests.EnrollmentPostRequest;
-import com.jonas.TechEventsRegistration.DTO.EnrollmentRequests.EnrollmentPutRequest;
+import com.jonas.TechEventsRegistration.DTO.Enrollment.EnrollmentRequest;
+import com.jonas.TechEventsRegistration.DTO.Enrollment.EnrollmentResponse;
 import com.jonas.TechEventsRegistration.Entity.Enrollment;
 import com.jonas.TechEventsRegistration.Entity.Event;
+import com.jonas.TechEventsRegistration.Entity.Participant;
+import com.jonas.TechEventsRegistration.Exceptions.EventAlreadyOccurredException;
+import com.jonas.TechEventsRegistration.Exceptions.NoVacanciesAvailableException;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.Mappers.EnrollmentMapper;
 import com.jonas.TechEventsRegistration.Repository.EnrollmentRepository;
 import com.jonas.TechEventsRegistration.util.EnrollmentCreator;
 import com.jonas.TechEventsRegistration.util.EventCreator;
-import com.jonas.TechEventsRegistration.util.RequestsCreator.EnrollmentPostAndPutCreator;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import com.jonas.TechEventsRegistration.util.ParticipantCreator;
+import com.jonas.TechEventsRegistration.util.RequestsCreator.EnrollmentRequestCreator;
+import com.jonas.TechEventsRegistration.util.ResponseCreator.EnrollmentResponseCreator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class EnrollmentServicesTest {
+
     @InjectMocks
     private EnrollmentServices enrollmentServices;
 
@@ -49,189 +53,171 @@ class EnrollmentServicesTest {
     @Mock
     private EventServices eventServices;
 
-    @BeforeEach
-    void setUp() {
-        PageImpl<Enrollment> enrollmentPage = new PageImpl<>(List.of(EnrollmentCreator.enrollmentCreatorValid()));
-        BDDMockito.when(enrollmentRepository.findAll(ArgumentMatchers.any(PageRequest.class)))
-                .thenReturn(enrollmentPage);
-
-        BDDMockito.when(enrollmentRepository.findById(ArgumentMatchers.anyLong()))
-                .thenReturn(Optional.of(EnrollmentCreator.enrollmentCreatorValid()));
-
-        BDDMockito.when(enrollmentRepository.save(ArgumentMatchers.any(Enrollment.class)))
-                .thenReturn(EnrollmentCreator.enrollmentCreatorValid());
-
-        BDDMockito.willDoNothing().given(enrollmentRepository).delete(ArgumentMatchers.any(Enrollment.class));
-
-        BDDMockito.when(enrollmentMapper.enrollmentToPost(ArgumentMatchers.any(EnrollmentPostRequest.class)))
-                .thenReturn(EnrollmentCreator.enrollmentCreatorValid());
-
-        BDDMockito.willDoNothing().given(enrollmentMapper)
-                .enrollmentToPut(ArgumentMatchers.any(EnrollmentPutRequest.class),
-                        ArgumentMatchers.any(Enrollment.class));
-
-        BDDMockito.when(eventServices.findById(ArgumentMatchers.anyLong()))
-                .thenReturn(EnrollmentCreator.enrollmentCreatorValid().getEvent());
-
-        BDDMockito.when(participantServices.findById(ArgumentMatchers.anyLong()))
-                .thenReturn(EnrollmentCreator.enrollmentCreatorValid().getParticipant());
-
-
-    }
-
     @Test
-    @DisplayName("Return list of Enrollments page when successful")
-    void testReturnListOfEnrollmentsPageWhenSuccessful() {
-        Long expectedEventId = EnrollmentCreator.enrollmentCreatorValid().getEvent().getId();
-        Long expectedParticipantId = EnrollmentCreator.enrollmentCreatorValid().getParticipant().getId();
-        LocalDate enrollmentDate = EnrollmentCreator.enrollmentCreatorValid().getEnrollmentDate();
-
-        Page<Enrollment> body = enrollmentServices.findAll(PageRequest.of(0,1));
-
-        Assertions.assertThat(body).isNotNull();
-        Assertions.assertThat(body.toList()).isNotEmpty()
-                .hasSize(1);
-        Assertions.assertThat(body.toList().get(0).getParticipant().getId()).isEqualTo(expectedParticipantId);
-        Assertions.assertThat(body.toList().get(0).getEvent().getId()).isEqualTo(expectedEventId);
-        Assertions.assertThat(body.toList().get(0).getEnrollmentDate()).isEqualTo(enrollmentDate);
-
-    }
-
-    @Test
-    @DisplayName("Return enrollment when successful")
-    void testFindByIdReturnEnrollmentWhenSuccessful() {
-        Long expectedEventId = EnrollmentCreator.enrollmentCreatorValid().getEvent().getId();
-        Long expectedParticipantId = EnrollmentCreator.enrollmentCreatorValid().getParticipant().getId();
-        LocalDate enrollmentDate = EnrollmentCreator.enrollmentCreatorValid().getEnrollmentDate();
-
-        Enrollment ById = enrollmentServices.findById(1L);
-
-        Assertions.assertThat(ById).isNotNull();
-        Assertions.assertThat(ById.getParticipant().getId()).isEqualTo(expectedParticipantId);
-        Assertions.assertThat(ById.getEvent().getId()).isEqualTo(expectedEventId);
-        Assertions.assertThat(ById.getEnrollmentDate()).isEqualTo(enrollmentDate);
-
-    }
-
-    @Test
-    @DisplayName("Return not found exception when Enrollment is not found")
-    void testFindByIdReturnNotFoundExceptionWhenEnrollmentIsNotFound() {
-        BDDMockito.when(enrollmentRepository.findById(ArgumentMatchers.anyLong()))
-                .thenReturn(Optional.empty());
-
-        Assertions.assertThatExceptionOfType(NotFoundException.class)
-                .isThrownBy(() -> enrollmentServices.findById(1L));
-    }
-
-    @Test
-    @DisplayName("save enrollment when successful")
-    void testSaveReturnEnrollmentWhenSuccessful() {
-        Long expectedEventId = EnrollmentCreator.enrollmentCreatorValid().getEvent().getId();
-        Long expectedParticipantId = EnrollmentCreator.enrollmentCreatorValid().getParticipant().getId();
-        LocalDate enrollmentDate = EnrollmentCreator.enrollmentCreatorValid().getEnrollmentDate();
-
-        Enrollment save = enrollmentServices.save(EnrollmentPostAndPutCreator.createEnrollmentPostRequest());
-
-        Assertions.assertThat(save).isNotNull();
-        Assertions.assertThat(save.getParticipant().getId()).isEqualTo(expectedParticipantId);
-        Assertions.assertThat(save.getEvent().getId()).isEqualTo(expectedEventId);
-        Assertions.assertThat(save.getEnrollmentDate()).isEqualTo(enrollmentDate);
-
-    }
-
-    @Test
-    @DisplayName("Update enrollment when successful")
-    void testUpdateReturnEnrollmentWhenSuccessful() {
-
-        BDDMockito.when(enrollmentRepository.save(ArgumentMatchers.any(Enrollment.class)))
-                .thenReturn(EnrollmentCreator.enrollmentCreatorUpdated());
-
-        Long expectedEventId = EnrollmentCreator.enrollmentCreatorUpdated().getEvent().getId();
-        Long expectedParticipantId = EnrollmentCreator.enrollmentCreatorUpdated().getParticipant().getId();
-        LocalDate enrollmentDate = EnrollmentCreator.enrollmentCreatorUpdated().getEnrollmentDate();
-
-        Enrollment update = enrollmentServices.update(EnrollmentPostAndPutCreator.createEnrollmentPutRequest());
-
-        Assertions.assertThat(update).isNotNull();
-        Assertions.assertThat(update.getParticipant().getId()).isEqualTo(expectedParticipantId);
-        Assertions.assertThat(update.getEvent().getId()).isEqualTo(expectedEventId);
-        Assertions.assertThat(update.getEnrollmentDate()).isEqualTo(enrollmentDate);
-
-    }
-
-    @Test
-    @DisplayName("Update should adjust vacancies when event is changed")
-    void testUpdateShouldAdjustVacanciesWhenEventIsChanged() {
-        Event oldEvent = EventCreator.createEventValid();
-        oldEvent.setVacancies(49);
-        Event newEvent = Event.builder()
-                .id(2L)
-                .eventName("Workshop de Spring Boot")
-                .local("Auditório Central")
-                .category("Tecnologia")
-                .description("Evento sobre Spring Boot")
-                .eventDateAndHours(LocalDateTime.of(2026, 2, 15, 19, 0))
-                .vacancies(30)
-                .build();
-
+    @DisplayName("findAll should return the mapped page of enrollment responses")
+    void findAllShouldReturnMappedPage() {
+        Pageable pageable = PageRequest.of(0, 10);
         Enrollment enrollment = EnrollmentCreator.enrollmentCreatorValid();
-        enrollment.setEvent(oldEvent);
+        EnrollmentResponse response = EnrollmentResponseCreator.createEnrollmentResponse();
+        Page<Enrollment> page = new PageImpl<>(List.of(enrollment), pageable, 1);
 
-        EnrollmentPutRequest putRequest = EnrollmentPutRequest.builder()
-                .id(enrollment.getId())
-                .participantId(enrollment.getParticipant().getId())
-                .eventId(newEvent.getId())
-                .enrollmentDate(enrollment.getEnrollmentDate())
-                .build();
+        BDDMockito.when(enrollmentRepository.findAll(pageable)).thenReturn(page);
+        BDDMockito.when(enrollmentMapper.toResponse(enrollment)).thenReturn(response);
 
-        BDDMockito.when(enrollmentRepository.findById(ArgumentMatchers.anyLong()))
-                .thenReturn(Optional.of(enrollment));
+        Page<EnrollmentResponse> result = enrollmentServices.findAll(pageable);
 
-        BDDMockito.when(eventServices.findById(newEvent.getId()))
-                .thenReturn(newEvent);
-
-        BDDMockito.when(enrollmentRepository.save(ArgumentMatchers.any(Enrollment.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        Enrollment update = enrollmentServices.update(putRequest);
-
-        Assertions.assertThat(oldEvent.getVacancies()).isEqualTo(50);
-        Assertions.assertThat(newEvent.getVacancies()).isEqualTo(29);
-        Assertions.assertThat(update.getEvent().getId()).isEqualTo(newEvent.getId());
+        assertThat(result).isNotEmpty();
+        assertThat(result.getContent().get(0)).isEqualTo(response);
+        BDDMockito.verify(enrollmentRepository).findAll(pageable);
+        BDDMockito.verify(enrollmentMapper).toResponse(enrollment);
     }
 
     @Test
-    @DisplayName("Update should not adjust vacancies when event is the same")
-    void testUpdateShouldNotAdjustVacanciesWhenEventIsTheSame() {
-        Event sameEvent = EventCreator.createEventValid();
-        sameEvent.setVacancies(49);
-
+    @DisplayName("findById should return the mapped response when enrollment exists")
+    void findByIdShouldReturnMappedResponseWhenEnrollmentExists() {
         Enrollment enrollment = EnrollmentCreator.enrollmentCreatorValid();
-        enrollment.setEvent(sameEvent);
+        EnrollmentResponse response = EnrollmentResponseCreator.createEnrollmentResponse();
 
-        EnrollmentPutRequest putRequest = EnrollmentPostAndPutCreator.createEnrollmentPutRequest();
+        BDDMockito.when(enrollmentRepository.findById(enrollment.getId())).thenReturn(Optional.of(enrollment));
+        BDDMockito.when(enrollmentMapper.toResponse(enrollment)).thenReturn(response);
 
-        BDDMockito.when(enrollmentRepository.findById(ArgumentMatchers.anyLong()))
-                .thenReturn(Optional.of(enrollment));
+        EnrollmentResponse result = enrollmentServices.findById(enrollment.getId());
 
-        BDDMockito.when(eventServices.findById(sameEvent.getId()))
-                .thenReturn(sameEvent);
-
-        BDDMockito.when(enrollmentRepository.save(ArgumentMatchers.any(Enrollment.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        enrollmentServices.update(putRequest);
-
-        Assertions.assertThat(sameEvent.getVacancies()).isEqualTo(49);
+        assertThat(result).isEqualTo(response);
+        BDDMockito.verify(enrollmentRepository).findById(1L);
     }
 
     @Test
-    @DisplayName("delete enrollment and return void when successful")
-    void testDeleteReturnVoidWhenSuccessful() {
-        Assertions.assertThatCode(()-> enrollmentServices.delete(1L))
-                .doesNotThrowAnyException();
+    @DisplayName("save should create enrollment, associate event and participant, and reduce vacancies, and return" +
+            "a Enrollment response")
+    void saveShouldCreateEnrollmentAndDecreaseVacanciesAndReturnEnrollmentResponse() {
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
+        Event event = EventCreator.createEventValid();
+
+        Participant participant = ParticipantCreator.createParticipantValid();
+        Enrollment entity = EnrollmentCreator.enrollmentCreator();
+        EnrollmentResponse response = EnrollmentResponseCreator.createEnrollmentResponse();
+
+        BDDMockito.when(eventServices.findEventEntityById(event.getId())).thenReturn(event);
+        BDDMockito.when(participantServices.findParticipantEntityById(participant.getId())).thenReturn(participant);
+        BDDMockito.when(enrollmentMapper.toEntity(request)).thenReturn(entity);
+        BDDMockito.when(enrollmentRepository.save(any(Enrollment.class))).thenReturn(entity);
+        BDDMockito.when(enrollmentMapper.toResponse(entity)).thenReturn(response);
+
+        EnrollmentResponse result = enrollmentServices.save(request);
+
+        assertThat(result).isEqualTo(response);
+        BDDMockito.verify(enrollmentRepository).save(entity);
     }
 
+    @Test
+    @DisplayName("save should throw NotFoundException when participant is missing")
+    void saveShouldThrowNotFoundExceptionWhenParticipantDoesNotExist() {
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
+        Event event = EventCreator.createEventValid();
+        BDDMockito.when(eventServices.findEventEntityById(event.getId())).thenReturn(event);
+        BDDMockito.when(participantServices.findParticipantEntityById(1L))
+                .thenThrow(NotFoundException.class);
 
+        assertThatThrownBy(()-> enrollmentServices.save(request))
+                .isInstanceOf(NotFoundException.class);
+
+        BDDMockito.verify(enrollmentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("save should throw NoVacanciesAvailable when there are no available vacancies")
+    void saveShouldThrowNoVacanciesAvailableExceptionWhenVacanciesAreZero() {
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
+        Event event = EventCreator.createEventValid();
+        event.setVacancies(0);
+        Participant participant = ParticipantCreator.createParticipantValid();
+        Enrollment entity = EnrollmentCreator.enrollmentCreator();
+
+        BDDMockito.when(eventServices.findEventEntityById(event.getId())).thenReturn(event);
+        BDDMockito.when(participantServices.findParticipantEntityById(participant.getId())).thenReturn(participant);
+        BDDMockito.when(enrollmentMapper.toEntity(request)).thenReturn(entity);
+
+        assertThatThrownBy(()-> enrollmentServices.save(request))
+                .isInstanceOf(NoVacanciesAvailableException.class);
+
+        BDDMockito.verify(enrollmentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("save should throw EventAlreadyOccurredException when the event date is in the past")
+    void saveShouldThrowEventAlreadyOccurredExceptionWhenEventHasAlreadyOccurred() {
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
+        Event event = EventCreator.createEventValid();
+        event.setEventDateAndHours(LocalDateTime.now().minusMinutes(5));
+
+        BDDMockito.when(eventServices.findEventEntityById(event.getId())).thenReturn(event);
+
+        assertThatThrownBy(() -> enrollmentServices.save(request))
+                .isInstanceOf(EventAlreadyOccurredException.class);
+
+        BDDMockito.verify(enrollmentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("update should throw EventAlreadyOccurredException when the new event date is in the past")
+    void updateShouldThrowEventAlreadyOccurredExceptionWhenNewEventHasAlreadyOccurred() {
+        Enrollment enrollment = EnrollmentCreator.enrollmentCreatorValid();
+        Event event = EventCreator.createEventValid();
+        event.setEventDateAndHours(LocalDateTime.now().minusMinutes(5));
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
+        request.setEventId(event.getId());
+
+        when(enrollmentRepository.findById(enrollment.getId())).thenReturn(Optional.of(enrollment));
+        when(eventServices.findEventEntityById(event.getId())).thenReturn(event);
+
+
+        assertThatThrownBy(()-> enrollmentServices.update(enrollment.getId(), request))
+                .isInstanceOf(EventAlreadyOccurredException.class);
+
+        BDDMockito.verify(enrollmentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("update should adjust vacancies when the enrollment changes to another event " +
+            ", save the event updated and return a response")
+    void updateShouldAdjustVacanciesWhenEventChangesAndSave() {
+        Enrollment enrollment = EnrollmentCreator.enrollmentCreatorValid();
+        Event oldEvent = enrollment.getEvent();
+        oldEvent.setId(1L);
+        oldEvent.setVacancies(2);
+
+        Event newEvent = EventCreator.createEventValid();
+        newEvent.setId(2L);
+        newEvent.setVacancies(5);
+        Participant participant = ParticipantCreator.createParticipantValid();
+
+        EnrollmentRequest request = EnrollmentRequestCreator.createEnrollmentRequest();
+        request.setEventId(2L);
+
+        when(enrollmentRepository.findById(enrollment.getId())).thenReturn(Optional.of(enrollment));
+        when(eventServices.findEventEntityById(newEvent.getId())).thenReturn(newEvent);
+        when(participantServices.findParticipantEntityById(participant.getId())).thenReturn(participant);
+
+        enrollmentServices.update(1L, request);
+
+        assertThat(oldEvent.getVacancies()).isEqualTo(3);
+        assertThat(newEvent.getVacancies()).isEqualTo(4);
+        BDDMockito.verify(enrollmentRepository).save(enrollment);
+    }
+
+    @Test
+    @DisplayName("delete should increase the event vacancies when enrollment is removed")
+    void deleteShouldIncreaseVacanciesWhenEnrollmentIsDeleted() {
+        Enrollment enrollment = EnrollmentCreator.enrollmentCreatorValid();
+        enrollment.getEvent().setVacancies(10);
+
+        BDDMockito.when(enrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+
+        enrollmentServices.delete(1L);
+
+        assertThat(enrollment.getEvent().getVacancies()).isEqualTo(11);
+        BDDMockito.verify(enrollmentRepository).deleteById(1L);
+    }
 
 }

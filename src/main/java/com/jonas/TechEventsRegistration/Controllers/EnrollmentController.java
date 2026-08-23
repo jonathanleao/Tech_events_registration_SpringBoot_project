@@ -1,10 +1,10 @@
 package com.jonas.TechEventsRegistration.Controllers;
 
-import com.jonas.TechEventsRegistration.DTO.EnrollmentRequests.EnrollmentPostRequest;
-import com.jonas.TechEventsRegistration.DTO.EnrollmentRequests.EnrollmentPutRequest;
-import com.jonas.TechEventsRegistration.Entity.Enrollment;
+import com.jonas.TechEventsRegistration.DTO.Enrollment.EnrollmentRequest;
+import com.jonas.TechEventsRegistration.DTO.Enrollment.EnrollmentResponse;
 import com.jonas.TechEventsRegistration.Services.EnrollmentServices;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,25 +22,25 @@ public class EnrollmentController {
 
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<Enrollment>> findAll(@Parameter (hidden = true) Pageable pageable){
+    public ResponseEntity<Page<EnrollmentResponse>> findAll(@Parameter (hidden = true) Pageable pageable){
         return new ResponseEntity<>(enrollmentServices.findAll(pageable), HttpStatus.OK);
     }
 
     @GetMapping(path = "/{id}")
-    public ResponseEntity<Enrollment> findById(@PathVariable Long id){
+    public ResponseEntity<EnrollmentResponse> findById(@PathVariable Long id){
         return  new ResponseEntity<>(enrollmentServices.findById(id), HttpStatus.OK);
     }
 
     @PostMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Enrollment> save (@RequestBody EnrollmentPostRequest enrollmentPostRequest){
-        return  new ResponseEntity<>(enrollmentServices.save(enrollmentPostRequest), HttpStatus.CREATED);
+    public ResponseEntity<EnrollmentResponse> save (@Valid @RequestBody EnrollmentRequest enrollmentRequest){
+        return  new ResponseEntity<>(enrollmentServices.save(enrollmentRequest), HttpStatus.CREATED);
     }
 
-    @PutMapping("/admin")
+    @PutMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Enrollment> update(@RequestBody EnrollmentPutRequest enrollmentPutRequest){
-        return new ResponseEntity<>(enrollmentServices.update(enrollmentPutRequest),HttpStatus.OK);
+    public ResponseEntity<EnrollmentResponse> update(@PathVariable Long id, @Valid @RequestBody EnrollmentRequest enrollmentRequest){
+        return new ResponseEntity<>(enrollmentServices.update(id, enrollmentRequest),HttpStatus.OK);
     }
 
     @DeleteMapping(path = "/admin/{id}")
