@@ -1,10 +1,7 @@
 package com.jonas.TechEventsRegistration.ExceptionsHandler;
 
-import com.jonas.TechEventsRegistration.Exceptions.BadRequestException;
+import com.jonas.TechEventsRegistration.Exceptions.*;
 import com.jonas.TechEventsRegistration.Exceptions.ExceptionDetails.ExceptionDetails;
-import com.jonas.TechEventsRegistration.Exceptions.NoVacanciesAvailableException;
-import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
-import com.jonas.TechEventsRegistration.Exceptions.VacanciesLimitExceedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -50,6 +47,17 @@ public class ExceptionsHandler {
         return new ResponseEntity<>(
                 ExceptionDetails.builder()
                         .title("No Vacancies Available Exception")
+                        .message(e.getMessage())
+                        .status(HttpStatus.BAD_REQUEST.value())
+                        .timestamp(LocalDateTime.now())
+                        .build(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(EventAlreadyOccurredException.class)
+    ResponseEntity<ExceptionDetails> handlerEventAlreadyOccurredException(EventAlreadyOccurredException e){
+        return new ResponseEntity<>(
+                ExceptionDetails.builder()
+                        .title("Event Already Occurred Exception")
                         .message(e.getMessage())
                         .status(HttpStatus.BAD_REQUEST.value())
                         .timestamp(LocalDateTime.now())
