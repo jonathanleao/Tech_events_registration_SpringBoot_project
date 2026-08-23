@@ -737,7 +737,7 @@ Exemplo de erro por evento já ocorrido:
 #### Criar um evento
 
 ```bash
-curl -u 'Jonathan Leão:JJnic@J0n' -X POST http://localhost:8080/Events/admin \
+curl -u 'Jonathan Leão:adminSenha' -X POST http://localhost:8080/Events/admin \
   -H 'Content-Type: application/json' \
   -d '{
     "eventName": "Java na prática",
@@ -753,7 +753,7 @@ curl -u 'Jonathan Leão:JJnic@J0n' -X POST http://localhost:8080/Events/admin \
 #### Criar um participante
 
 ```bash
-curl -u 'Jonathan Leão:JJnic@J0n' -X POST http://localhost:8080/Participants/admin \
+curl -u 'Jonathan Leão:adminSenha' -X POST http://localhost:8080/Participants/admin \
   -H 'Content-Type: application/json' \
   -d '{
     "participantName": "Maria Souza",
@@ -766,7 +766,7 @@ curl -u 'Jonathan Leão:JJnic@J0n' -X POST http://localhost:8080/Participants/ad
 #### Criar uma inscrição
 
 ```bash
-curl -u 'Jonathan Leão:JJnic@J0n' -X POST http://localhost:8080/Enrollments/admin \
+curl -u 'Jonathan Leão:adminSenha' -X POST http://localhost:8080/Enrollments/admin \
   -H 'Content-Type: application/json' \
   -d '{
     "participantId": 1,
