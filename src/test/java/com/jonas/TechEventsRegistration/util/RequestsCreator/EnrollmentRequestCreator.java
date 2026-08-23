@@ -10,14 +10,12 @@ public class EnrollmentRequestCreator {
         return EnrollmentRequest.builder()
                 .participantId(1L)
                 .eventId(1L)
-                .enrollmentDate(LocalDate.of(2026,1,23))
                 .build();
     }
     public static EnrollmentRequest createEnrollmentRequestUpdated(){
         return EnrollmentRequest.builder()
                 .participantId(1L)
                 .eventId(1L)
-                .enrollmentDate(LocalDate.of(2026,3,10))
                 .build();
     }
 }
