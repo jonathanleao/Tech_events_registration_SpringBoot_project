@@ -1,6 +1,7 @@
 package com.jonas.TechEventsRegistration.DTO.Event;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -31,5 +32,6 @@ public class EventRequest {
 
     @NotNull
     @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
+    @Schema(example = "22/08/2026 14:30", type = "string")
     private LocalDateTime eventDateAndHours;
 }
