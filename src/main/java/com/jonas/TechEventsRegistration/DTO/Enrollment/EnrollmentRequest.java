@@ -17,7 +17,4 @@ public class EnrollmentRequest {
     private Long participantId;
     @NotNull
     private Long eventId;
-
-    @JsonFormat(pattern = "dd/MM" + "/yyyy")
-    private LocalDate enrollmentDate;
 }
