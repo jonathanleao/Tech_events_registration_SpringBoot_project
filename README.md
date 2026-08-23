@@ -136,11 +136,20 @@ Relaciona um `Participant` com um `Event`:
 - event
 - enrollmentDate
 
-Regra principal:
+Regras principais:
 
 - ao criar a inscrição, a quantidade de vagas do evento é decrementada;
 - ao remover a inscrição, a vaga é devolvida;
-- se a quantidade de vagas chegar a zero, a aplicação rejeita novas inscrições.
+- se a quantidade de vagas chegar a zero, a aplicação rejeita novas inscrições;
+- a inscrição só é permitida se o evento ainda não ocorreu;
+- se o evento já estiver passado, a aplicação lança `EventAlreadyOccurredException`.
+
+Validações adicionadas recentemente:
+
+- `validateEventHasNotOccurred(event)` em `EnrollmentServices`;
+- `save` e `update` bloqueiam inscrições quando `eventDateAndHours` é anterior ao horário atual;
+- exceção tratada globalmente pelo `ExceptionsHandler` com status `400 Bad Request`;
+- o payload de erro padrão inclui `title`, `message`, `status` e `timestamp`.
 
 ## Dependências e configuração
 
@@ -188,16 +197,19 @@ Se quiser testar com banco em memória em vez do MySQL, é possível ajustar a c
 - Java 17+
 - Maven 3.8+
 - MySQL 8+
+- Docker + Docker Compose (opcional, mas suportado)
 - Git
 
-### 1) Clonar o repositório
+### Opção 1: execução local com Maven
+
+#### 1) Clonar o repositório
 
 ```bash
 git clone https://github.com/seu-usuario/TechEventsRegistration.git
 cd TechEventsRegistration
 ```
 
-### 2) Configurar o banco
+#### 2) Configurar o banco
 
 Crie o banco ou deixe o Spring criar automaticamente com `createDatabaseIfNotExist=true`:
 
@@ -205,13 +217,13 @@ Crie o banco ou deixe o Spring criar automaticamente com `createDatabaseIfNotExi
 CREATE DATABASE tech_events;
 ```
 
-### 3) Instalar dependências
+#### 3) Instalar dependências
 
 ```bash
 mvn clean install
 ```
 
-### 4) Executar a aplicação
+#### 4) Executar a aplicação
 
 ```bash
 mvn spring-boot:run
@@ -223,6 +235,49 @@ A aplicação sobe em:
 http://localhost:8080
 ```
 
+### Opção 2: execução com Docker Compose
+
+O projeto já inclui suporte para containerização com `Dockerfile` e `compose.yaml`.
+
+#### 1) Ajustar variáveis de ambiente
+
+O arquivo `.env-example` deve ser copiado para `.env` e preenchido com as credenciais do banco:
+
+```bash
+cp .env-example .env
+```
+
+Conteúdo esperado:
+
+```env
+DB_USERNAME=root
+DB_PASSWORD=sua_senha
+```
+
+#### 2) Subir a stack
+
+```bash
+docker compose up --build
+```
+
+Esse comando provisiona:
+
+- a API Spring Boot em `http://localhost:8080`
+- um container MySQL em `localhost:3306`
+- a base de dados `techEvents` configurada no `compose.yaml`
+
+#### 3) Parar os containers
+
+```bash
+docker compose down
+```
+
+Se quiser remover também o volume do banco:
+
+```bash
+docker compose down -v
+```
+
 ## Segurança e autenticação
 
 A API usa Spring Security com autenticação HTTP Basic.
@@ -231,8 +286,8 @@ A API usa Spring Security com autenticação HTTP Basic.
 
 No `SecurityConfig`, existem dois usuários cadastrados:
 
-- `Jonathan Leão` / `JJnic@J0n` -> roles `USER`, `ADMIN`
-- `Jonas` / `JJnic@J0n` -> role `USER`
+- `Jonathan Leão` / `adminSenha` -> roles `USER`, `ADMIN`
+- `Jonas` / `userSenha` -> role `USER`
 
 ### Regras
 
@@ -568,10 +623,15 @@ Payload:
 ```json
 {
   "participantId": 1,
-  "eventId": 1,
-  "enrollmentDate": "12/08/2026"
+  "eventId": 1
 }
 ```
+
+Observação:
+
+- `enrollmentDate` não é enviado no request;
+- a data da inscrição é criada automaticamente no backend (`LocalDate.now()`) ao salvar a entidade;
+- o campo não aparece no payload do cliente e nem é exigido na API.
 
 Resposta esperada (201 Created):
 
@@ -592,10 +652,11 @@ Resposta esperada (201 Created):
 }
 ```
 
-Regra importante:
+Regras importantes:
 
 - ao criar uma inscrição, a API decrementa 1 vaga do evento;
-- se não houver vagas disponíveis, a aplicação responde com `400 Bad Request`.
+- se não houver vagas disponíveis, a aplicação responde com `400 Bad Request`;
+- se o evento já ocorreu, a resposta também é `400 Bad Request` com `Event Already Occurred Exception`.
 
 #### Atualizar inscrição
 
@@ -610,10 +671,14 @@ Payload:
 ```json
 {
   "participantId": 2,
-  "eventId": 1,
-  "enrollmentDate": "15/08/2026"
+  "eventId": 1
 }
 ```
+
+Observação:
+
+- o `enrollmentDate` continua sendo gerado pelo sistema;
+- o update só altera a associação entre participante e evento, e não recebe data manual.
 
 #### Excluir inscrição
 
@@ -637,11 +702,13 @@ A API usa respostas padronizadas por `@RestControllerAdvice`.
 - `200 OK` - operação bem-sucedida de leitura/atualização
 - `201 Created` - recurso criado com sucesso
 - `204 No Content` - exclusão bem-sucedida
-- `400 Bad Request` - dados inválidos, limite de vagas excedido ou sem vagas disponíveis
+- `400 Bad Request` - dados inválidos, limite de vagas excedido, sem vagas disponíveis ou evento já ocorrido
 - `404 Not Found` - registro não encontrado
 - `500 Internal Server Error` - erro inesperado do servidor
 
-### Estrutura de erro
+### Estruturas de erro
+
+Exemplo de erro por falta de vagas:
 
 ```json
 {
@@ -649,6 +716,17 @@ A API usa respostas padronizadas por `@RestControllerAdvice`.
   "status": 400,
   "timestamp": "2026-08-20T23:11:40",
   "message": "No vacancies dispo for this event"
+}
+```
+
+Exemplo de erro por evento já ocorrido:
+
+```json
+{
+  "title": "Event Already Occurred Exception",
+  "status": 400,
+  "timestamp": "2026-08-23T00:00:00",
+  "message": "you can´t not subscribe, the event is already occurred "
 }
 ```
 
@@ -692,8 +770,7 @@ curl -u 'Jonathan Leão:JJnic@J0n' -X POST http://localhost:8080/Enrollments/adm
   -H 'Content-Type: application/json' \
   -d '{
     "participantId": 1,
-    "eventId": 1,
-    "enrollmentDate": "12/08/2026"
+    "eventId": 1
   }'
 ```
 
