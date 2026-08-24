@@ -442,7 +442,7 @@ Resposta de sucesso (201 Created):
   "description": "Workshop sobre Java e Spring Boot",
   "local": "São Paulo",
   "category": "Backend",
-  "eventDateAndHours": "2026-08-20T19:00:00"
+  "eventDateAndHours": "2026-08-22T19:14:30"
 }
 ```
 
@@ -605,7 +605,7 @@ Resposta:
     "description": "Workshop sobre Java e Spring Boot",
     "local": "São Paulo",
     "category": "Backend",
-    "eventDateAndHours": "2026-08-20T19:00:00"
+    "eventDateAndHours": "2026-08-20T19:14:30"
   }
 }
 ```
@@ -647,7 +647,7 @@ Resposta esperada (201 Created):
     "description": "Workshop sobre Java e Spring Boot",
     "local": "São Paulo",
     "category": "Backend",
-    "eventDateAndHours": "2026-08-20T19:00:00"
+    "eventDateAndHours": "2026-08-22T19:14:30"
   }
 }
 ```
