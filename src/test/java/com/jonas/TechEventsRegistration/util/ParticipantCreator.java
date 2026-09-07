@@ -9,7 +9,7 @@ public class ParticipantCreator {
                 .participantName("Jonathan")
                 .institution("Uninorte Djalma Batista")
                 .email("Jonathan.Leao@Hotmail.com")
-                .phoneNumber("(92) 9999-9999").build();
+                .phoneNumber("(92) 99999-9999").build();
     }
 
     public static Participant createParticipantValid() {
@@ -27,6 +27,6 @@ public class ParticipantCreator {
                 .participantName("Jonathan update")
                 .institution("UFAM-Universidade Federal Do Amazonas")
                 .email("Jonathan.Leao.update@Hotmail.com")
-                .phoneNumber("(92)9999-9999").build();
+                .phoneNumber("(92) 99999-9999").build();
     }
 }
