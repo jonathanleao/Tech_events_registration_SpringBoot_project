@@ -63,6 +63,16 @@ public class ExceptionsHandler {
                         .timestamp(LocalDateTime.now())
                         .build(), HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<ExceptionDetails> handlerUserAlreadyExistsException(UserAlreadyExistsException e){
+        return new ResponseEntity<>(ExceptionDetails.builder()
+                .title("User Already Exists Exception")
+                .message(e.getMessage())
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .build(), HttpStatus.CONFLICT);
+    }
     
     @ExceptionHandler(Exception.class)
     ResponseEntity<ExceptionDetails> handlerGenericException(Exception e){
