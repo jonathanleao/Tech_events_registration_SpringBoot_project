@@ -6,6 +6,8 @@ import com.jonas.TechEventsRegistration.DTO.Participant.ParticipantRequest;
 import com.jonas.TechEventsRegistration.DTO.Participant.ParticipantResponse;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.ExceptionsHandler.ExceptionsHandler;
+import com.jonas.TechEventsRegistration.SecurityServices.JwtAuthenticationFilter;
+import com.jonas.TechEventsRegistration.SecurityServices.JwtServices;
 import com.jonas.TechEventsRegistration.Services.ParticipantServices;
 import com.jonas.TechEventsRegistration.util.RequestsCreator.ParticipantRequestCreator;
 import com.jonas.TechEventsRegistration.util.ResponseCreator.ParticipantResponseCreator;
@@ -48,6 +50,12 @@ class ParticipantControllerTest {
 
     @MockitoBean
     private ParticipantServices participantServices;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private JwtServices jwtServices;
 
     private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule());

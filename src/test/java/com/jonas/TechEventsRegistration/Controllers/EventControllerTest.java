@@ -7,6 +7,8 @@ import com.jonas.TechEventsRegistration.DTO.Event.EventResponse;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.Exceptions.VacanciesLimitExceedException;
 import com.jonas.TechEventsRegistration.ExceptionsHandler.ExceptionsHandler;
+import com.jonas.TechEventsRegistration.SecurityServices.JwtAuthenticationFilter;
+import com.jonas.TechEventsRegistration.SecurityServices.JwtServices;
 import com.jonas.TechEventsRegistration.Services.EventServices;
 import com.jonas.TechEventsRegistration.util.RequestsCreator.EventRequestCreator;
 import com.jonas.TechEventsRegistration.util.ResponseCreator.EventResponseCreator;
@@ -49,6 +51,12 @@ class EventControllerTest {
 
     @MockitoBean
     private EventServices eventServices;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private JwtServices jwtServices;
 
     private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule());

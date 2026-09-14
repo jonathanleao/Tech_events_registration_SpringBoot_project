@@ -8,6 +8,8 @@ import com.jonas.TechEventsRegistration.Exceptions.EventAlreadyOccurredException
 import com.jonas.TechEventsRegistration.Exceptions.NoVacanciesAvailableException;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.ExceptionsHandler.ExceptionsHandler;
+import com.jonas.TechEventsRegistration.SecurityServices.JwtAuthenticationFilter;
+import com.jonas.TechEventsRegistration.SecurityServices.JwtServices;
 import com.jonas.TechEventsRegistration.Services.EnrollmentServices;
 import com.jonas.TechEventsRegistration.util.RequestsCreator.EnrollmentRequestCreator;
 import com.jonas.TechEventsRegistration.util.ResponseCreator.EnrollmentResponseCreator;
@@ -49,6 +51,12 @@ class EnrollmentControllerTest {
 
     @MockitoBean
     private EnrollmentServices enrollmentServices;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private JwtServices jwtServices;
 
     private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule());
