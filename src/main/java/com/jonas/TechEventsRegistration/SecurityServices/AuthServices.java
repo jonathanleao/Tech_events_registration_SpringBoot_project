@@ -5,6 +5,7 @@ import com.jonas.TechEventsRegistration.DTO.SecurityDTOs.UserLoginResponse;
 import com.jonas.TechEventsRegistration.DTO.SecurityDTOs.UserRegisterRequest;
 import com.jonas.TechEventsRegistration.DTO.SecurityDTOs.UserRegisterResponse;
 import com.jonas.TechEventsRegistration.Entity.User;
+import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.Exceptions.UserAlreadyExistsException;
 import com.jonas.TechEventsRegistration.Mappers.UserMapper;
 import com.jonas.TechEventsRegistration.Repository.UserRepository;
@@ -15,7 +16,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
-import java.util.TreeSet;
 
 @Service
 @RequiredArgsConstructor
@@ -36,12 +36,15 @@ public class AuthServices {
             throw new UserAlreadyExistsException("user with login " + request.getLogin() + " already exists");
         }
 
+
         User entity = userMapper.toEntity(request);
         entity.setPassword(passwordEncoder.encode(request.getPassword()));
 
         User save = userRepository.save(entity);
 
-        return userMapper.toResponse(save);
+        UserRegisterResponse response = userMapper.toResponse(save);
+        response.setMessage("User with login " + save.getLogin() + " registered successfully");
+        return response;
     }
 
     public UserLoginResponse login (UserLoginRequest request){
@@ -52,7 +55,8 @@ public class AuthServices {
                 )
         );
 
-        Optional<User> userByLogin = userRepository.findUserByLogin(request.getLogin());
+        Optional<User> userByLogin = Optional.of(userRepository.findUserByLogin(request.getLogin())
+                .orElseThrow(() -> new NotFoundException("User with login " + request.getLogin() + " not found")));
 
         String token = jwtServices.generateToken(userByLogin.get());
 
