@@ -167,6 +167,9 @@ O projeto usa as dependências principais abaixo, definidas no `pom.xml`:
 - `spring-boot-devtools`
 - `spring-boot-starter-test`
 - `springdoc-openapi-starter-webmvc-ui`
+- `jjwt-api`
+- `jjwt-impl`
+- `jjwt-jackson`
 
 ### Configuração de banco
 
@@ -278,30 +281,97 @@ Se quiser remover também o volume do banco:
 docker compose down -v
 ```
 
-## Segurança e autenticação
+## Segurança e autenticação com JWT
 
-A API usa Spring Security com autenticação HTTP Basic.
+A API usa Spring Security com autenticação stateless baseada em JWT. Em vez de manter sessão no servidor, o backend emite um token ao usuário autenticado e valida esse token em cada requisição recebida.
 
-### Usuários em memória
+### Fluxo de autenticação
 
-No `SecurityConfig`, existem dois usuários cadastrados:
+1. O cliente envia `POST /Auth/register` para criar um usuário ou `POST /Auth/login` para autenticar.
+2. `AuthController` recebe a requisição e delega ao `AuthServices`.
+3. `AuthenticationManager` valida `login` e `password` utilizando o `PasswordEncoder` (BCrypt).
+4. `JwtServices.generateToken()` cria o JWT com o `subject` igual ao login do usuário e com expiração configurada em `jwt.expiration`.
+5. O cliente envia o token no header HTTP:
 
-- `Jonathan Leão` / `adminSenha` -> roles `USER`, `ADMIN`
-- `Jonas` / `userSenha` -> role `USER`
-
-### Regras
-
-- endpoints públicos: consultas e leitura sem autenticação;
-- endpoints com `/admin` exigem autenticação e perfil de administrador;
-- ações de criação, atualização e exclusão em eventos, participantes e inscrições estão protegidas.
-
-Exemplo de autenticação via curl:
-
-```bash
-curl -u 'Jonathan Leão:adminSenha' http://localhost:8080/Events/admin?page=0\&size=6
+```http
+Authorization: Bearer <token>
 ```
 
-No Postman, use a aba Authorization e selecione `Basic Auth`.
+6. `JwtAuthenticationFilter` intercepta a requisição, extrai o token, valida a assinatura e o tempo de expiração e, se estiver correto, preenche o `SecurityContext`.
+7. Métodos protegidos usam `@PreAuthorize("hasRole('ADMIN')")` para reforçar o controle por perfil.
+
+### Componentes envolvidos
+
+- `User` implementa `UserDetails` e expõe as authorities com `ROLE_ADMIN` ou `ROLE_USER`.
+- `UserRoles` define os papéis permitidos: `ADMIN` e `USER`.
+- `SecurityConfig` ativa o modo stateless, desabilita CSRF e registra o filtro JWT antes do `UsernamePasswordAuthenticationFilter`.
+- `JwtAuthenticationFilter` lê o header `Authorization`, valida o token e autentica o usuário na sessão de segurança do Spring.
+- `JwtServices` centraliza geração, leitura do subject e validação do token.
+- `AuthController` e `AuthServices` expõem o fluxo de cadastro e login.
+
+### Configuração do JWT
+
+As propriedades de segurança ficam em `src/main/resources/application.yaml`:
+
+```yaml
+jwt:
+  secret: sua_chave_em_base64 (foi o que utilizei)
+  expiration: 3600000 (1 hora em milissegundos, mas pode ser ajustado conforme sua preferência)
+```
+
+- `jwt.secret`: chave de assinatura do token em Base64.
+- `jwt.expiration`: tempo de validade em milissegundos (1 hora, neste projeto).
+
+### Regras de acesso atuais
+
+- `/Auth/register` e `/Auth/login`: públicos.
+- `/swagger-ui/**` e `/v3/api-docs/**`: públicos.
+- `GET` de consulta pública: `/Events/{id}`, `/Events/find`, `/Participants/{id}`, `/Participants/find`, `/Enrollments/{id}`.
+- rotas administrativas `/Events/admin/**`, `/Participants/admin/**`, `/Enrollments/admin/**`: exigem `ROLE_ADMIN`.
+- demais requisições: exigem autenticação válida.
+
+### Exemplo prático
+
+#### 1) Registrar usuário administrador
+
+```bash
+curl -X POST http://localhost:8080/Auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "Administrador",
+    "login": "admin",
+    "password": "admin123",
+    "role": "ADMIN"
+  }'
+```
+
+#### 2) Fazer login
+
+```bash
+curl -X POST http://localhost:8080/Auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "login": "admin",
+    "password": "admin123"
+  }'
+```
+
+Resposta esperada:
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+#### 3) Consumir endpoint protegido
+
+```bash
+curl http://localhost:8080/Events/admin?page=0\&size=6 \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...'
+```
+
+> Observação: os endpoints administrativos foram implementados com controle por perfil e o token precisa ser enviado em todas as requisições autenticadas.
 
 ## Swagger / OpenAPI
 
