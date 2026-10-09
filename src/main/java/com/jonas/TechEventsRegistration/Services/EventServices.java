@@ -6,6 +6,7 @@ import com.jonas.TechEventsRegistration.Entity.Event;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.Exceptions.VacanciesLimitExceedException;
 import com.jonas.TechEventsRegistration.Mappers.EventMapper;
+import com.jonas.TechEventsRegistration.Repository.EnrollmentRepository;
 import com.jonas.TechEventsRegistration.Repository.EventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,7 @@ import java.util.List;
 public class EventServices {
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
+    private final EnrollmentRepository enrollmentRepository;
 
     public Page<EventResponse> findAll(Pageable pageable) {
         return eventRepository.findAll(pageable).map(eventMapper::toResponse);
@@ -50,7 +52,16 @@ public class EventServices {
     @Transactional
     public EventResponse update(Long id, EventRequest eventRequest) {
         findEventEntityById(id);
-        validateVacanciesMaxCapacity(eventRequest.getVacancies(), eventRequest.getMaxVacancies());
+
+        Integer currentEnrollments = enrollmentRepository.countByEventId(id);
+
+        if (eventRequest.getMaxVacancies() < currentEnrollments) {
+            throw new VacanciesLimitExceedException("Max vacancies cannot be less than current enrollments");
+        }
+
+        Integer recalculatedVacancies = eventRequest.getMaxVacancies() - currentEnrollments;
+        eventRequest.setVacancies(recalculatedVacancies);
+
         Event entity = eventMapper.toEntity(eventRequest);
         entity.setId(id);
         eventRepository.save(entity);
@@ -63,6 +74,9 @@ public class EventServices {
         eventRepository.deleteById(id);
     }
     private void validateVacanciesMaxCapacity(Integer vacancies, Integer maxVacancies){
+        if (vacancies <= 0){
+            throw new VacanciesLimitExceedException("vacancies must be greater than zero");
+        }
         if (vacancies > maxVacancies){
             throw  new VacanciesLimitExceedException("vacancies cant not Exceed the limit");
         }
