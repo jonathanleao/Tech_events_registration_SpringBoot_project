@@ -6,6 +6,7 @@ import com.jonas.TechEventsRegistration.Entity.Event;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.Exceptions.VacanciesLimitExceedException;
 import com.jonas.TechEventsRegistration.Mappers.EventMapper;
+import com.jonas.TechEventsRegistration.Repository.EnrollmentRepository;
 import com.jonas.TechEventsRegistration.Repository.EventRepository;
 import com.jonas.TechEventsRegistration.util.EventCreator;
 import com.jonas.TechEventsRegistration.util.RequestsCreator.EventRequestCreator;
@@ -17,7 +18,6 @@ import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -28,7 +28,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,7 +40,11 @@ class EventServicesTest {
     private EventRepository eventRepository;
 
     @Mock
+    private EnrollmentRepository enrollmentRepository;
+
+    @Mock
     private EventMapper eventMapper;
+
 
     @Test
     @DisplayName("findAll should return the mapped page of event responses")
@@ -151,19 +154,59 @@ class EventServicesTest {
     }
 
     @Test
-    @DisplayName("update should throw VacanciesLimitExceedExceptions values where vacancies exceed maxVacancies")
+    @DisplayName("update should throw VacanciesLimitExceedException when maxVacancies is less than current enrollments")
     void updateShouldThrowVacanciesLimitExceedExceptionWhenVacanciesExceedLimit() {
         EventRequest request = EventRequestCreator.createEventRequest();
         Event eventValid = EventCreator.createEventValid();
-        request.setVacancies(51);
-        request.setMaxVacancies(50);
+        request.setMaxVacancies(10);
 
         BDDMockito.when(eventRepository.findById(eventValid.getId())).thenReturn(Optional.of(eventValid));
+        BDDMockito.when(enrollmentRepository.countByEventId(eventValid.getId())).thenReturn(11);
 
         assertThatThrownBy(()-> eventServices.update(eventValid.getId(), request))
                 .isInstanceOf(VacanciesLimitExceedException.class);
 
         BDDMockito.verify(eventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("update should allow vacancies equal to zero when event becomes fully booked")
+    void updateShouldAllowVacanciesEqualToZeroWhenEventIsFullyBooked(){
+        EventRequest eventRequest = EventRequestCreator.createEventRequest();
+        Event eventValid = EventCreator.createEventValid();
+        eventRequest.setMaxVacancies(1);
+
+        BDDMockito.when(eventRepository.findById(eventValid.getId())).thenReturn(Optional.of(eventValid));
+        BDDMockito.when(enrollmentRepository.countByEventId(eventValid.getId())).thenReturn(1);
+        BDDMockito.when(eventMapper.toEntity(eventRequest)).thenReturn(eventValid);
+        BDDMockito.when(eventRepository.save(eventValid)).thenReturn(eventValid);
+        BDDMockito.when(eventMapper.toResponse(eventValid)).thenReturn(EventResponseCreator.createEventResponse());
+
+        eventServices.update(eventValid.getId(), eventRequest);
+
+        assertThat(eventRequest.getVacancies()).isEqualTo(0);
+        BDDMockito.verify(eventRepository).save(eventValid);
+    }
+
+
+
+    @Test
+    @DisplayName("update should recalculate vacancies based on current enrollments and save the event")
+    void updateShouldRecalculateVacanciesAndSaveWhenMaxVacanciesIsValid(){
+        EventRequest eventRequest = EventRequestCreator.createEventRequest();
+        Event eventValid = EventCreator.createEventValid();
+        eventRequest.setMaxVacancies(50);
+
+       BDDMockito.when(eventRepository.findById(eventValid.getId())).thenReturn(Optional.of(eventValid));
+       BDDMockito.when(enrollmentRepository.countByEventId(eventValid.getId())).thenReturn(30);
+       BDDMockito.when(eventMapper.toEntity(eventRequest)).thenReturn(eventValid);
+       BDDMockito.when(eventRepository.save(eventValid)).thenReturn(eventValid);
+       BDDMockito.when(eventMapper.toResponse(eventValid)).thenReturn(EventResponseCreator.createEventResponse());
+
+       eventServices.update(eventValid.getId(), eventRequest);
+
+       assertThat(eventRequest.getVacancies()).isEqualTo(20);
+       BDDMockito.verify(eventRepository).save(eventValid);
     }
 
     @Test
