@@ -5,6 +5,7 @@ import com.jonas.TechEventsRegistration.DTO.Participant.ParticipantResponse;
 import com.jonas.TechEventsRegistration.Entity.Participant;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.Mappers.ParticipantMapper;
+import com.jonas.TechEventsRegistration.Producers.ParticipantProducer;
 import com.jonas.TechEventsRegistration.Repository.ParticipantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +20,7 @@ import java.util.List;
 public class ParticipantServices {
     private final ParticipantRepository participantRepository;
     private final ParticipantMapper participantMapper;
+    private final ParticipantProducer participantProducer;
 
     public Page<ParticipantResponse> findAll(Pageable pageable){
         return participantRepository.findAll(pageable).map(participantMapper::toResponse);
@@ -43,6 +45,7 @@ public class ParticipantServices {
     public ParticipantResponse save(ParticipantRequest participantRequest) {
         Participant entity = participantMapper.toEntity(participantRequest);
         Participant entitySaved = participantRepository.save(entity);
+        participantProducer.publishMessageEmail(entitySaved);
         return participantMapper.toResponse(entitySaved);
     }
 
