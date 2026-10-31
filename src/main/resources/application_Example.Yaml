@@ -9,6 +9,13 @@ spring:
       ddl-auto: update
     show-sql: true
 
+  rabbitmq:
+    addresses: your_cloud_adrees
+
+broker:
+  queue:
+    name: queue_name
+
 jwt:
   secret: secret_key
   expiration: expiration_Time_In_Milli_Seconds
