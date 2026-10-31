@@ -29,22 +29,22 @@ public class EnrollmentServices {
     private final EventServices eventServices;
 
 
-    public Page<EnrollmentResponse> findAll(Pageable pageable){
+    public Page<EnrollmentResponse> findAll(Pageable pageable) {
         return enrollmentRepository.findAll(pageable).map(enrollmentMapper::toResponse);
     }
 
-    public EnrollmentResponse findById(Long id){
+    public EnrollmentResponse findById(Long id) {
         return enrollmentRepository.findById(id).map(enrollmentMapper::toResponse)
                 .orElseThrow(() -> new NotFoundException("enrollment not Found whit id: " + id));
     }
 
-    public Enrollment findEnrollmentEntityById(Long id){
+    public Enrollment findEnrollmentEntityById(Long id) {
         return enrollmentRepository.findById(id)
-                .orElseThrow(()-> new NotFoundException("Enrollment not found with id: " + id));
+                .orElseThrow(() -> new NotFoundException("Enrollment not found with id: " + id));
     }
 
     @Transactional
-    public EnrollmentResponse save (EnrollmentRequest enrollmentRequest){
+    public EnrollmentResponse save(EnrollmentRequest enrollmentRequest) {
         Event event = eventServices.findEventEntityById(enrollmentRequest.getEventId());
 
         validateEventHasNotOccurred(event);
@@ -58,8 +58,9 @@ public class EnrollmentServices {
         Enrollment entitySaved = enrollmentRepository.save(entity);
         return enrollmentMapper.toResponse(entitySaved);
     }
+
     @Transactional
-    public EnrollmentResponse update(Long id, EnrollmentRequest enrollmentRequest){
+    public EnrollmentResponse update(Long id, EnrollmentRequest enrollmentRequest) {
         Enrollment enrollment = findEnrollmentEntityById(id);
         Event event = eventServices.findEventEntityById(enrollmentRequest.getEventId());
 
@@ -67,7 +68,7 @@ public class EnrollmentServices {
 
         Participant participant = participantServices.findParticipantEntityById(enrollmentRequest.getParticipantId());
 
-        if (!enrollment.getEvent().getId().equals(event.getId())){
+        if (!enrollment.getEvent().getId().equals(event.getId())) {
             increaseVacancies(enrollment.getEvent());
             decreaseVacancies(event);
             enrollment.setEnrollmentDate(LocalDate.now());
@@ -79,35 +80,36 @@ public class EnrollmentServices {
         return enrollmentMapper.toResponse(entitySaved);
 
     }
+
     @Transactional
-    public void delete(Long id){
+    public void delete(Long id) {
         Enrollment enrollment = findEnrollmentEntityById(id);
         increaseVacancies(enrollment.getEvent());
         enrollmentRepository.deleteById(id);
     }
 
-    private void decreaseVacancies(Event event){
-        if (event.getVacancies() <= 0){
-            throw  new NoVacanciesAvailableException("No vacancies dispo for this event");
+    private void decreaseVacancies(Event event) {
+        if (event.getVacancies() <= 0) {
+            throw new NoVacanciesAvailableException("No vacancies dispo for this event");
         }
         event.setVacancies(event.getVacancies() - 1);
     }
 
-    private void increaseVacancies(Event event){
+    private void increaseVacancies(Event event) {
         Integer newVacancies = event.getVacancies() + 1;
         validateVacanciesMaxCapacity(newVacancies, event.getMaxVacancies());
         event.setVacancies(newVacancies);
     }
 
-    private void validateVacanciesMaxCapacity(Integer vacancies, Integer maxVacancies){
-        if (vacancies > maxVacancies){
-            throw  new VacanciesLimitExceedException("vacancies cant not exceed the limit");
+    private void validateVacanciesMaxCapacity(Integer vacancies, Integer maxVacancies) {
+        if (vacancies > maxVacancies) {
+            throw new VacanciesLimitExceedException("vacancies cant not exceed the limit");
         }
     }
 
-    private void validateEventHasNotOccurred(Event event){
-        if (event.getEventDateAndHours().isBefore(LocalDateTime.now())){
-            throw  new EventAlreadyOccurredException("you can´t not subscribe, the event is already occurred ");
+    private void validateEventHasNotOccurred(Event event) {
+        if (event.getEventDateAndHours().isBefore(LocalDateTime.now())) {
+            throw new EventAlreadyOccurredException("you can´t not subscribe, the event is already occurred ");
         }
     }
 }
