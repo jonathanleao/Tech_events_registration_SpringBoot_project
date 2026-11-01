@@ -1,6 +1,6 @@
 package com.jonas.TechEventsRegistration.Producers;
 
-import com.jonas.TechEventsRegistration.DTO.EmailRabbitMQ.ParticipantEmailRequest;
+import com.jonas.TechEventsRegistration.DTO.EmailRabbitMQ.EmailRequest;
 import com.jonas.TechEventsRegistration.Entity.Participant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -21,11 +21,11 @@ public class ParticipantProducer {
 
 
     public void publishMessageEmail(Participant participant){
-        ParticipantEmailRequest emailRequest = new ParticipantEmailRequest();
+        EmailRequest emailRequest = new EmailRequest();
         emailRequest.setParticipantId(participant.getId());
         emailRequest.setEmailTo(participant.getEmail());
         emailRequest.setSubject("Cadastro no TechEvents.com realizado com sucesso!!!!");
-        emailRequest.setText("Seja muito bem vindo(a), você ganhou 1 milhão de reais!!!!");
+        emailRequest.setText("Seja muito bem vindo(a), aproveite nossos eventos.");
 
         rabbitTemplate.convertAndSend("", routingKey, emailRequest);
     }
