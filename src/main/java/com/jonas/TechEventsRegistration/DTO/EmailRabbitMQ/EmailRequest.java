@@ -13,7 +13,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ParticipantEmailRequest {
+public class EmailRequest {
 
     @NotNull
     private Long participantId;
