@@ -10,6 +10,7 @@ import com.jonas.TechEventsRegistration.Exceptions.NoVacanciesAvailableException
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.Exceptions.VacanciesLimitExceedException;
 import com.jonas.TechEventsRegistration.Mappers.EnrollmentMapper;
+import com.jonas.TechEventsRegistration.Producers.EnrollmentProducer;
 import com.jonas.TechEventsRegistration.Repository.EnrollmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,6 +28,7 @@ public class EnrollmentServices {
     private final EnrollmentMapper enrollmentMapper;
     private final ParticipantServices participantServices;
     private final EventServices eventServices;
+    private final EnrollmentProducer enrollmentProducer;
 
 
     public Page<EnrollmentResponse> findAll(Pageable pageable) {
@@ -56,6 +58,7 @@ public class EnrollmentServices {
         entity.setParticipant(participant);
         decreaseVacancies(event);
         Enrollment entitySaved = enrollmentRepository.save(entity);
+        enrollmentProducer.publishMessageEmail(entitySaved);
         return enrollmentMapper.toResponse(entitySaved);
     }
 
