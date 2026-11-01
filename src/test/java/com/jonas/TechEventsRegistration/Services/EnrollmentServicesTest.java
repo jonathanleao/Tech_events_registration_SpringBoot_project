@@ -9,6 +9,7 @@ import com.jonas.TechEventsRegistration.Exceptions.EventAlreadyOccurredException
 import com.jonas.TechEventsRegistration.Exceptions.NoVacanciesAvailableException;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.Mappers.EnrollmentMapper;
+import com.jonas.TechEventsRegistration.Producers.EnrollmentProducer;
 import com.jonas.TechEventsRegistration.Repository.EnrollmentRepository;
 import com.jonas.TechEventsRegistration.util.EnrollmentCreator;
 import com.jonas.TechEventsRegistration.util.EventCreator;
@@ -52,6 +53,9 @@ class EnrollmentServicesTest {
 
     @Mock
     private EventServices eventServices;
+
+    @Mock
+    private EnrollmentProducer enrollmentProducer;
 
     @Test
     @DisplayName("findAll should return the mapped page of enrollment responses")
@@ -108,6 +112,7 @@ class EnrollmentServicesTest {
 
         assertThat(result).isEqualTo(response);
         BDDMockito.verify(enrollmentRepository).save(entity);
+        BDDMockito.verify(enrollmentProducer).publishMessageEmail(entity);
     }
 
     @Test

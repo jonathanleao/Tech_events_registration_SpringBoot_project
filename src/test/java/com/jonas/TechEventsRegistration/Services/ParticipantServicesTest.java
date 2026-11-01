@@ -6,6 +6,7 @@ import com.jonas.TechEventsRegistration.DTO.Participant.ParticipantResponse;
 import com.jonas.TechEventsRegistration.Entity.Participant;
 import com.jonas.TechEventsRegistration.Exceptions.NotFoundException;
 import com.jonas.TechEventsRegistration.Mappers.ParticipantMapper;
+import com.jonas.TechEventsRegistration.Producers.ParticipantProducer;
 import com.jonas.TechEventsRegistration.Repository.ParticipantRepository;
 import com.jonas.TechEventsRegistration.util.ParticipantCreator;
 import com.jonas.TechEventsRegistration.util.RequestsCreator.ParticipantRequestCreator;
@@ -41,6 +42,9 @@ class ParticipantServicesTest {
 
     @Mock
     private ParticipantRepository participantRepository;
+
+    @Mock
+    private ParticipantProducer participantProducer;
 
     @Test
     @DisplayName("findAll should return a mapped page of participant responses")
@@ -120,6 +124,7 @@ class ParticipantServicesTest {
 
         assertThat(result).isEqualTo(response);
         BDDMockito.verify(participantRepository).save(participantToSave);
+        BDDMockito.verify(participantProducer).publishMessageEmail(savedParticipant);
     }
 
     @Test
