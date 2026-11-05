@@ -12,7 +12,8 @@ O Tech Events Registration é uma aplicação de cadastro e acompanhamento de ev
 - controle de vagas por evento;
 - paginação de listagens;
 - respostas padronizadas de erro;
-- autenticação básica com Spring Security para ações administrativas.
+- autenticação básica com Spring Security para ações administrativas;
+- envio assíncrono de e-mails por mensageria RabbitMQ quando um participante ou inscrição é criado.
 
 A aplicação foi pensada como um projeto educacional para praticar arquitetura em camadas, persistência com JPA e boas práticas de API REST.
 
@@ -22,6 +23,8 @@ A aplicação foi pensada como um projeto educacional para praticar arquitetura 
 - Spring Boot 4.0.6
 - Spring Web MVC
 - Spring Data JPA
+- Spring AMQP
+- RabbitMQ
 - Hibernate
 - Spring Security
 - MySQL 8+
@@ -48,7 +51,13 @@ A aplicação segue uma arquitetura em camadas, com separação clara entre resp
 ├─────────────────────────────┤
 │          Mapper             │  Converte entidades para DTOs e vice-versa
 ├─────────────────────────────┤
+│    Producers / RabbitMQ     │  Publica eventos de email em filas
+├─────────────────────────────┤
 │         MySQL / JPA         │  Persistência de eventos, participantes e inscrições
+├─────────────────────────────┤
+│       RabbitMQ Broker       │  Fila de eventos: participant.email e enrollment.email
+├─────────────────────────────┤
+│ email_events_rabbitMQ_microservice │  Consome as filas e envia os e-mails
 └─────────────────────────────┘
 ```
 
@@ -158,6 +167,7 @@ O projeto usa as dependências principais abaixo, definidas no `pom.xml`:
 - `spring-boot-starter-data-jpa`
 - `spring-boot-starter-security`
 - `spring-boot-starter-webmvc`
+- `spring-boot-starter-amqp`
 - `spring-boot-starter-validation`
 - `mysql-connector-j`
 - `h2`
@@ -193,6 +203,46 @@ Antes de iniciar a aplicação, certifique-se de que o MySQL esteja ativo e que 
 
 Se quiser testar com banco em memória em vez do MySQL, é possível ajustar a configuração para H2, mas o projeto foi estruturado para uso com MySQL como base principal.
 
+## Mensageria RabbitMQ e envio de e-mail
+
+A API também integra RabbitMQ para notificar o envio de e-mails de forma assíncrona, sem bloquear a resposta HTTP da requisição.
+
+### Fluxo da mensagem
+
+1. Quando um `Participant` é criado, o `ParticipantServices` chama `ParticipantProducer.publishMessageEmail()`.
+2. Quando uma `Enrollment` é criada, o `EnrollmentServices` chama `EnrollmentProducer.publishMessageEmail()`.
+3. Cada producer monta um objeto `EmailRequest` com:
+   - `participantId`
+   - `emailTo`
+   - `subject`
+   - `text`
+4. A mensagem é enviada para a fila configurada usando `RabbitTemplate.convertAndSend(...)`.
+5. O microserviço externo `email_events_rabbitMQ_microservice` (repositório no GitHub do autor) consome essas filas e envia o e-mail real para o destinatário.
+
+### Filas e routing keys utilizadas
+
+As filas configuradas no `application.yaml` são:
+
+```yaml
+spring:
+  rabbitmq:
+    addresses: amqps://<usuario>:<senha>@<host>/
+
+broker:
+  queue:
+    participant-created: participant.email
+    enrollment-created: enrollment.email
+```
+
+Essas chaves representam os tópicos/filas consumidos pelo microserviço de e-mail. A serialização da mensagem é feita com `JacksonJsonMessageConverter`, configurado em `RabbitMQConfig.java`.
+
+### Exemplos de notificações
+
+- Ao criar um participante: envia uma mensagem com assunto `Cadastro no TechEvents.com realizado com sucesso!!!!`.
+- Ao realizar uma inscrição: envia uma mensagem com assunto `Inscrição Realizada com sucesso no evento: <nome_do_evento>!!!!!`.
+
+> Importante: a API publica a mensagem, mas o envio efetivo do e-mail acontece no microserviço de e-mail. Portanto, o RabbitMQ e o microserviço `email_events_rabbitMQ_microservice` precisam estar disponíveis para que o processo funcione corretamente.
+
 ## Como rodar a aplicação
 
 ### Pré-requisitos
@@ -200,6 +250,8 @@ Se quiser testar com banco em memória em vez do MySQL, é possível ajustar a c
 - Java 17+
 - Maven 3.8+
 - MySQL 8+
+- RabbitMQ em execução
+- Microserviço de e-mail `email_events_rabbitMQ_microservice` disponível
 - Docker + Docker Compose (opcional, mas suportado)
 - Git
 
