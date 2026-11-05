@@ -233,6 +233,7 @@ broker:
     participant-created: participant.email
     enrollment-created: enrollment.email
 ```
+Use as mesmas credenciais de fila e url no yaml, e configure o microserviço de e-mail para consumir as mesmas filas.
 
 Essas chaves representam os tópicos/filas consumidos pelo microserviço de e-mail. A serialização da mensagem é feita com `JacksonJsonMessageConverter`, configurado em `RabbitMQConfig.java`.
 
