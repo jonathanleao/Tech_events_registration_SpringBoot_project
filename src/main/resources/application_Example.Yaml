@@ -14,7 +14,8 @@ spring:
 
 broker:
   queue:
-    name: queue_name
+    participant-created: participant.email
+    enrollment-created: enrollment.email
 
 jwt:
   secret: secret_key

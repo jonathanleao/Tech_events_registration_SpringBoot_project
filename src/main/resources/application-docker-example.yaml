@@ -13,6 +13,14 @@ spring:
       ddl-auto: update
     show-sql: true
 
+  rabbitmq:
+    addresses: cloud_amqp_url
+
+broker:
+  queue:
+    participant-created: participant.email
+    enrollment-created: enrollment.email
+
 jwt:
   secret: secret_key
   expiration: expiration_Time_In_Milli_Seconds
